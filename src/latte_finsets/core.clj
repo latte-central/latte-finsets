@@ -30,8 +30,8 @@
   "The set `s` is counted from 1 to `n`"
   [[T :type] [s (set T)] [n int]]
   (exists [cf (rel T int)]
-    (and (pfun cf s (range int/one n))
-         (pfun/pbijective cf))))
+    (exists [pf (pfun cf s (range int/one n))]
+      (pfun/pbijective pf))))
 
 
 
