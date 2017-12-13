@@ -11,6 +11,7 @@
             [latte.prop :as p :refer [<=> and or not]]
             [latte.equal :as eq :refer [equal]]
 
+            [latte-sets.core :as set :refer [set]]
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
@@ -28,8 +29,9 @@
 (definition counted-def
   "The set `s` is counted from 1 to `n`"
   [[T :type] [s (set T)] [n int]]
-  (exists [cf (pfun cf s (range int/one n))]
-    (pfun/pbijective cf)))
+  (exists [cf (rel T int)]
+    (and (pfun cf s (range int/one n))
+         (pfun/pbijective cf))))
 
 
 
