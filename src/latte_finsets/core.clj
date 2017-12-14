@@ -285,10 +285,10 @@ The `cnt` argument is a proof that the set can be counted,
     (lambda [k int]
       (= k zero))))
 
-(defimplicit finite-emptyset
-  "The emptyset is finite, cf. [[finite-emptyset-thm]]"
-  [def-env ctx [T T-ty]]
-  (list #'finite (list #'set/emptyset T) (list #'zero-count T)))
+(definition finite-emptyset
+  "The emptyset is finite."
+  [[T :type]]
+  (finite-emptyset-thm T (zero-count T)))
 
 (defthm card-emptyset-thm
   [[T :type] [cf (rel T int)]]
@@ -298,9 +298,10 @@ The `cnt` argument is a proof that the set can be counted,
   (have <cnt> _ :by (emptyset-counted T cf))
   (qed (the-card-prop <cnt>)))
 
-(defimplicit card-emptyset
-  [def-env ctx [T T-ty]]
-  (list #'card-emptyset-thm T (list #'zero-count T)))
+(definition card-emptyset
+  "The cardinal of the emptyset is zero."
+  [[T :type]]
+  (card-emptyset-thm T (zero-count T)))
 
 ;; singletons
 
@@ -403,5 +404,21 @@ The `cnt` argument is a proof that the set can be counted,
   (qed ((q/ex-intro (lambda [k int]
                       (counted (singleton x) (one-count T) k)) one)
         <a>)))
+
+
+(definition the-card-singleton
+  "The cardinal of the singleton set `{x}`."
+  [[T :type] [x T]]
+  (the-card (singleton-counted T x)))
+
+(defthm the-card-singleton-prop
+  "The cardinal of a singleton is `one`."
+  [[T :type] [x T]]
+  (= (the-card-singleton T x) one))
+
+(proof 'the-card-singleton-prop
+  (qed (the-card-prop (singleton-counted T x))))
+
+
 
 
