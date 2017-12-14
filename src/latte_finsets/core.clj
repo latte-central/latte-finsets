@@ -147,13 +147,11 @@ must be a biject with `(range 1 n)`the counted relation, cf. [[counted-elim-pbij
 (utils/set-opacity! #'counted-def true)
 
 (defn decomposer-counted-type [t]
-  (println "Here t=" t)
   (if (clojure.core/and (seq? t)
                         (seq t)
                         (clojure.core/= (count t) 5)
                         (clojure.core/= (first t) #'latte-finsets.core/counted-def))
     (do
-      (println "(rest t)" (rest t))
       (into [] (rest t)))
     ;; XXX: cannot decompose further because
     ;; we cannot retrieve the x and y of the
