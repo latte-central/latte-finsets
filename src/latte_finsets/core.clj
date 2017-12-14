@@ -28,10 +28,16 @@
 
 (definition counted-def
   "The set `s` is counted from 1 to `n`"
-  [[T :type] [s (set T)] [n int]]
-  (exists [cf (rel T int)]
-    (exists [pf (pfun cf s (range int/one n))]
-      (pfun/pbijective pf))))
+  [[T :type] [s (set T)] [n int] [cf (rel T int)] [pf (pfun cf s (range int/one n))]]
+  (pfun/pbijective pf))
+
+(defimplicit counted
+  "The set `s` is counted from 1 to `n`, cf. [[counted-def]]"
+  [def-env ctx [s s-ty] [n n-ty] [pf pf-ty]]
+  (let [[T _ _ _ cf] (pfun/fetch-pfun-type def-env ctx pf-ty)]
+    (list #'counted-def T s n cf pf)))
+
+
 
 
 
