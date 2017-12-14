@@ -16,7 +16,7 @@
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
-            [latte-integers.core :as int :refer [int =]]
+            [latte-integers.core :as int :refer [int = zero one]]
             [latte-integers.nat :as nat :refer [nat]]
             [latte-integers.ord :as ord :refer [< <=]]))
 
@@ -44,11 +44,39 @@
       (have <d> p/absurd :by ((p/absurd-intro (= n m)) <c> (p/and-elim-right Hinf)))))
   (qed <d>))
 
+(defthm range-eq
+  [[m int] [n int]]
+  (==> (= m n)
+       (forall [k int]
+         (==> (elem k (range m n))
+              (= k n)))))
+
+(proof 'range-eq
+  (assume [Heq (= m n)
+           k int
+           Hk (elem k (range m n))]
+    (have <a> (elem k (range n n))
+          :by (eq/eq-subst (lambda [i int]
+                             (elem k (range i n))) Heq Hk))
+    (have <b> (<= n k) :by (p/and-elim-left <a>))
+    (have <c> (<= k n) :by (p/and-elim-right <a>))
+    (have <d> (= k n) :by (eq/eq-sym ((ord/le-antisym n k) <b> <c>))))
+  (qed <d>))
+
+(defthm range-one
+  [[n int]]
+  (forall-in [k int (range n n)]
+    (= k n)))
+
+(proof 'range-one
+  (have <a> (= n n) :by (eq/eq-refl n))
+  (qed  ((range-eq n n) <a>)))
+
 (definition counted-def
   "The set `s` is counted from 1 to `n`"
   [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (and (pfun cf s (range int/one n))
-       (pfun/pbijective cf s (range int/one n))))
+  (and (pfun cf s (range one n))
+       (pfun/pbijective cf s (range one n))))
 
 (defimplicit counted
   "The set `s` is counted from 1 to `n`, cf. [[counted-def]]"
@@ -61,13 +89,13 @@
 (defthm counted-intro-thm
   "The introduction rule for the counted predicate."
   [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (==> (pfun cf s (range int/one n))
-       (pfun/pbijective cf s (range int/one n))
+  (==> (pfun cf s (range one n))
+       (pfun/pbijective cf s (range one n))
        (counted s cf n)))
 
 (proof 'counted-intro-thm
-  (assume [H1 (pfun cf s (range int/one n))
-           H2 (pfun/pbijective cf s (range int/one n))]
+  (assume [H1 (pfun cf s (range one n))
+           H2 (pfun/pbijective cf s (range one n))]
     (have <a> (counted s cf n) :by (p/and-intro H1 H2)))
   (qed <a>))
 
@@ -82,7 +110,7 @@
 must be a partial function."
   [[T :type] [s (set T)] [cf (rel T int)] [n int]]
   (==> (counted s cf n)
-       (pfun cf s (range int/one n))))
+       (pfun cf s (range one n))))
 
 (proof 'counted-elim-pfun-thm
   (assume [H (counted s cf n)]
@@ -101,7 +129,7 @@ must be a partial function, cf. [[counted-elim-pfun-thm]]."
 must be a biject with `(range 1 n)`."
   [[T :type] [s (set T)] [cf (rel T int)] [n int]]
   (==> (counted s cf n)
-       (pfun/pbijective cf s (range int/one n))))
+       (pfun/pbijective cf s (range one n))))
 
 (proof 'counted-elim-pbijective-thm
   (assume [H (counted s cf n)]
@@ -215,14 +243,14 @@ The `cnt` argument is a proof that the set can be counted,
 
 (deflemma emptyset-psurjective
   [[T :type] [cf (rel T int)]]
-  (pfun/psurjective cf (set/emptyset T) (range int/one int/zero)))
+  (pfun/psurjective cf (set/emptyset T) (range one zero)))
 
 (proof 'emptyset-psurjective
   (assume [y int
-           Hy (elem y (range int/one int/zero))]
-    (have <a> (< int/zero int/one) :by (ord/lt-succ int/zero))
-    (have <b> (not (elem y (range int/one int/zero)))
-          :by ((range-empty int/one int/zero)
+           Hy (elem y (range one zero))]
+    (have <a> (< zero one) :by (ord/lt-succ zero))
+    (have <b> (not (elem y (range one zero)))
+          :by ((range-empty one zero)
                <a> y))
     (have <c> p/absurd :by (<b> Hy))
     (have <d> _ :by (<c> (exists-in [x T (set/emptyset T)]
@@ -231,12 +259,12 @@ The `cnt` argument is a proof that the set can be counted,
 
 (deflemma emptyset-counted
   [[T :type] [cf (rel T int)]]
-  (counted (set/emptyset T) cf int/zero))
+  (counted (set/emptyset T) cf zero))
 
 (proof 'emptyset-counted
-  (qed ((counted-intro (set/emptyset T) cf int/zero)
-        (emptyset-pfun T int cf (range int/one int/zero))
-        (p/and-intro (emptyset-pinjective T int cf (range int/one int/zero))
+  (qed ((counted-intro (set/emptyset T) cf zero)
+        (emptyset-pfun T int cf (range one zero))
+        (p/and-intro (emptyset-pinjective T int cf (range one zero))
                      (emptyset-psurjective T cf)))))
 
 (defthm finite-emptyset-thm
@@ -247,7 +275,7 @@ The `cnt` argument is a proof that the set can be counted,
 (proof 'finite-emptyset-thm
   (qed ((q/ex-intro (lambda [k int]
                       (counted (set/emptyset T) cf k))
-                    int/zero)
+                    zero)
         (emptyset-counted T cf))))
 
 (definition zero-count
@@ -255,7 +283,7 @@ The `cnt` argument is a proof that the set can be counted,
   [[T :type]]
   (lambda [x T]
     (lambda [k int]
-      (= k int/zero))))
+      (= k zero))))
 
 (defimplicit finite-emptyset
   "The emptyset is finite, cf. [[finite-emptyset-thm]]"
@@ -264,7 +292,7 @@ The `cnt` argument is a proof that the set can be counted,
 
 (defthm card-emptyset-thm
   [[T :type] [cf (rel T int)]]
-  (= (the-card (emptyset-counted T cf)) int/zero))
+  (= (the-card (emptyset-counted T cf)) zero))
 
 (proof 'card-emptyset-thm
   (have <cnt> _ :by (emptyset-counted T cf))
@@ -272,11 +300,108 @@ The `cnt` argument is a proof that the set can be counted,
 
 (defimplicit card-emptyset
   [def-env ctx [T T-ty]]
-  (list #'card-emptyset-thm (list #'latte-sets.core/emptyset T) (list #'zero-count T)))
+  (list #'card-emptyset-thm T (list #'zero-count T)))
 
+;; singletons
 
+(definition singleton-def
+  "The singleton set `{x}`."
+  [[T :type] [x T]]
+  (lambda [y T] (equal x y)))
 
+(defimplicit singleton
+  "The singleton set `{x}`, cf. [[singleton-def]]."
+  [def-env ctx [x x-ty]]
+  (list #'singleton-def x-ty x))
 
+(defthm singleton-thm
+  [[T :type] [x T]]
+  (elem x (singleton x)))
 
+(proof 'singleton-thm
+  (qed (eq/eq-refl x)))
+
+(definition one-count
+  "The counting relation for singletons."
+  [[T :type]]
+  (lambda [x T]
+    (lambda [k int]
+      (= k one))))
+
+(deflemma singleton-pfun
+  [[T :type] [x T]]
+  (pfun/pfun (one-count T) (singleton x) (range one one)))
+
+(proof 'singleton-pfun
+  (assume [z T
+           Hx (elem z (singleton x))]
+    (assume [y1 int
+             Hy1 (elem y1 (range one one))]
+      (have <a> (= y1 one) :by ((range-one one) y1 Hy1))
+      (assume [y2 int
+               Hy2 (elem y2 (range one one))]
+        (have <b> (= y2 one) :by ((range-one one) y2 Hy2))
+        (assume [Hf1 ((one-count T) x y1)
+                 Hf2 ((one-count T) x y2)]
+          (have <c> (= y1 y2) :by (eq/eq-trans <a> (eq/eq-sym <b>)))))))
+  (qed <c>))
+
+(deflemma singleton-pinjective
+  [[T :type] [x T]]
+  (pfun/pinjective (one-count T) (singleton x) (range one one)))
+
+(proof 'singleton-pinjective
+  (assume [x1 T
+           Hx1 (elem x1 (singleton x))]
+    (have <a> (equal x x1) :by Hx1)
+    (assume [x2 T
+             Hx2 (elem x2 (singleton x))]
+      (have <b> (equal x x2) :by Hx2)
+      (assume [y1 int
+               Hy1 (elem y1 (range one one))
+               y2 int
+               Hy2 (elem y2 (range one one))
+               Hf1 ((one-count T) x1 y1)
+               Hf2 ((one-count T) x2 y2)
+               Hyeq (= y1 y2)]
+        (have <c> (equal x1 x2) :by (eq/eq-trans (eq/eq-sym <a>) <b>)))))
+  (qed <c>))
+
+(deflemma singleton-psurjective
+  [[T :type] [x T]]
+  (pfun/psurjective (one-count T) (singleton x) (range one one)))
+
+(proof 'singleton-psurjective
+  (assume [y int
+           Hy (elem y (range one one))]
+    (have <a> (elem x (singleton x)) :by (singleton-thm T x))
+    (have <b> (= y one) :by ((range-one one) y Hy))
+    (have <c> ((one-count T) x y) :by <b>)
+    (have <e> _ :by ((q/ex-intro (lambda [z T]
+                                   (and (elem z (singleton x))
+                                        ((one-count T) z y))) x)
+                     (p/and-intro <a> <c>))))
+  (qed <e>))
+
+(deflemma singleton-counted
+  [[T :type] [x T]]
+  (counted (singleton x) (one-count T) one))
+
+(proof 'singleton-counted
+  (qed ((counted-intro (singleton x) (one-count T) one)
+        (singleton-pfun T x)
+        (p/and-intro (singleton-pinjective T x)
+                     (singleton-psurjective T x)))))
+
+(defthm finite-singleton
+  "The emptyset of type `T` is finite, whatever the counting function."
+  [[T :type] [x T]]
+  (finite (singleton x) (one-count T)))
+
+(proof 'finite-singleton
+  (have <a> (counted (singleton x) (one-count T) one) :by (singleton-counted T x))
+  (qed ((q/ex-intro (lambda [k int]
+                      (counted (singleton x) (one-count T) k)) one)
+        <a>)))
 
 
