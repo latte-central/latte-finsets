@@ -156,7 +156,20 @@ if the function `cf` counts the number `n` of elements in `s`,
   [def-env ctx [T T-ty]]
   (list #'finite (list #'set/emptyset T) (list #'zero-count T)))
 
+(comment
 
+  (definition card-def
+    [[T :type] [s (set T)] [cf (rel T int)] [n int] [cnt (counted s n cf)]]
+    n)
+
+  (defimplicit card
+    [def-env ctx [cnt cnt-ty]]
+    ...)
+
+
+
+  (defthm emptyset-card
+    ()))
 
 
 
