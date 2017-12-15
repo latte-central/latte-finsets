@@ -16,7 +16,7 @@
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
-            [latte-integers.core :as int :refer [int = zero one]]
+            [latte-integers.core :as int :refer [int = zero one succ]]
             [latte-integers.nat :as nat :refer [nat]]
             [latte-integers.ord :as ord :refer [< <=]]))
 
@@ -418,5 +418,58 @@ The `cnt` argument is a proof that the set can be counted,
   (qed (the-card-prop (singleton-counted T x))))
 
 
+(definition insert-def
+  "Insertion of element `x` in set `s`."
+  [[T :type] [x T] [s (set T)]]
+  (lambda [y T]
+    (or (equal y x)
+        (elem y s))))
 
+(defimplicit insert
+  "Insertion of element `x` in set `s`, cf. [[insert-def]]."
+  [def-env ctx [x T] [s s-ty]]
+  (list #'insert-def T x s))
 
+(defthm insert-prop-elem
+  [[T :type] [x T] [s (set T)]]
+  (elem x (insert x s)))
+
+(proof 'insert-prop-elem
+  (have <a> (equal x x) :by (eq/eq-refl x))
+  (qed (p/or-intro-left <a> (elem x s))))
+
+(defthm insert-prop-set
+  [[T :type] [x T] [s (set T)]]
+  (forall [y T]
+    (==> (elem y s)
+         (elem y (insert x s)))))
+
+(proof 'insert-prop-set
+  (assume [y T
+           Hy (elem y s)]
+    (have <a> _ :by (p/or-intro-right (equal y x) Hy)))
+  (qed <a>))
+
+(definition insert-count
+  [[T :type] [s (set T)] [size int]]
+  (lambda [y T]
+    (lambda [k int]
+      (and (==> (elem y s) (= k size))
+           (==> (not (elem y s)) (= k (succ size)))))))
+
+(deflemma insert-pfun-elem
+  [[T :type] [x T] [s (set T)] [size int]]
+  (==> (elem x s)
+       (pfun/pfun (insert-count T s size)  (insert x s) (range one size))))
+
+(proof 'insert-pfun-elem
+  (assume [Hx (elem x s)
+           z T
+           Hz (elem z (insert x s))]
+    (assume [y1 int
+             Hy1 (elem y1 (range one size))
+             y2 int
+             Hy2 (elem y2 (range one size))
+             Hcount1 ((insert-count T s size) z y1)
+             Hcount2 ((insert-count T s size) z y2)]
+      (have <a> (= )))))
