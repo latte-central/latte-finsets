@@ -12,7 +12,9 @@
             [latte.prop :as p :refer [<=> and or not]]
             [latte.equal :as eq :refer [equal]]
 
-            [latte-sets.core :as set :refer [set elem forall-in exists-in]]
+            [latte.classic :as classic]
+
+            [latte-sets.core :as set :refer [set elem forall-in exists-in subset seteq]]
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
@@ -442,13 +444,64 @@ The `cnt` argument is a proof that the set can be counted,
   [[T :type] [x T] [s (set T)]]
   (forall [y T]
     (==> (elem y s)
-         (elem y (insert x s)))))
+         (elem y (insert x s))))) ;;; XXX : rewrite with subset
 
 (proof 'insert-prop-set
   (assume [y T
            Hy (elem y s)]
     (have <a> _ :by (p/or-intro-right (equal y x) Hy)))
   (qed <a>))
+
+(defthm insert-prop-neq
+  [[T :type] [x T] [s (set T)]]
+  (forall [y T]
+    (==> (elem y (insert x s))
+         (not (equal y x))
+         (elem y s))))
+
+(proof 'insert-prop-neq
+  (assume [y T
+           H1y (elem y (insert x s))
+           H2y (not (equal y x))]
+    (assume [H1 (equal y x)]
+      (have <a1> p/absurd :by (H2y H1))
+      (have <a> (elem y s) :by (<a1> (elem y s))))
+    (assume [H2 (elem y s)]
+      (have <b> (elem y s) :by H2))
+    (have <c> (elem y s)
+          :by (p/or-elim H1y (elem y s) <a> <b>)))
+  (qed <c>))
+
+(defthm insert-prop-idem
+  [[T :type] [x T] [s (set T)]]
+  (==> (elem x s)
+       (seteq s (insert x s))))
+
+(proof 'insert-prop-idem
+  (assume [Hx (elem x s)]
+    "First the subset case."
+    (assume [y T
+             Hy (elem y s)]
+      (have <a1> (elem y (insert x s)) :by ((insert-prop-set T x s) y Hy)))
+    (have <a> (subset s (insert x s)) :by <a1>)
+    "Second the supset case."
+    (assume [y T
+             Hy (elem y (insert x s))]
+      "We use classical reasoning."
+      (assume [Hyes (equal y x)]
+        (have <b> (elem y s) :by (eq/eq-subst (lambda [z T]
+                                                (elem z s))
+                                              (eq/eq-sym Hyes)
+                                              Hx)))
+      (assume [Hno (not (equal y x))]
+        (have <c> (elem y s) :by ((insert-prop-neq T x s)
+                                  y Hy Hno)))
+      (have <d> (or (equal y x)
+                    (not (equal y x))) :by (classic/excluded-middle-ax (equal y x)))
+      (have <e> (elem y s) :by (p/or-elim <d> (elem y s) <b> <c>)))
+    (have <f> (subset (insert x s) s) :by <e>)
+    (have <g> _ :by (p/and-intro <a> <f>)))
+  (qed <g>))
 
 (definition insert-count
   [[T :type] [s (set T)] [size int]]
@@ -466,10 +519,24 @@ The `cnt` argument is a proof that the set can be counted,
   (assume [Hx (elem x s)
            z T
            Hz (elem z (insert x s))]
+    (have <a1> (seteq s (insert x s)) :by ((insert-prop-idem T x s) Hx))
+    (have <a2> (set/set-equal s (insert x s))
+          :by ((set/seteq-implies-set-equal-ax T s (insert x s)) <a1>))
+    (have <a3> (<=> (elem z s)  ;;; XXX : define a substitution law for set-equal
+                                ;;;       also congruence
+                    (elem z (insert x s)))
+          :by (<a2> (lambda [w (set T)]
+                      (elem z w))))
+    (have <a> (elem z s) :by ((p/and-elim-right <a3>) Hz))
     (assume [y1 int
              Hy1 (elem y1 (range one size))
              y2 int
              Hy2 (elem y2 (range one size))
              Hcount1 ((insert-count T s size) z y1)
              Hcount2 ((insert-count T s size) z y2)]
-      (have <a> (= )))))
+      (have <b> (= y1 size) :by ((p/and-elim-left Hcount1) <a>))
+      (have <c> (= y2 size) :by ((p/and-elim-left Hcount2) <a>))
+      (have <d> (= y1 y2) :by (eq/eq-trans <b> (eq/eq-sym <c>)))))
+  (qed <d>))
+
+
