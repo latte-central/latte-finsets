@@ -540,3 +540,33 @@ The `cnt` argument is a proof that the set can be counted,
   (qed <d>))
 
 
+(comment
+
+  (deflemma insert-count-not-elem
+    [[T :type] [s (set T)] [size int] [x T] [k int]]
+    (==> (not (elem x s))
+         ((insert-count T s size) x k)
+         (= k (succ size))))
+
+  (proof 'insert-count-not-elem
+    (assume [Hx (not (elem x s))
+             Hcount ((insert-count T s size) x k)]
+      (have <a> (==> (not (elem x s))
+                     (= k (succ size))) :by (p/and-elim-right Hcount))
+      (have <b> (= k (succ size)) :by (<a> Hx)))
+    (qed <b>))
+
+  (deflemma insert-pfun-not-elem
+    [[T :type] [x T] [s (set T)] [size int]]
+    (==> (not (elem x s))
+         (pfun/pfun (insert-count T s size)  (insert x s) (range one (succ size)))))
+
+  (proof 'insert-pfun-not-elem
+    (assume [Hx (not (elem x s))
+             z T
+             Hz (elem z (insert x s))]
+      (assume [y1 int
+               Hy1 (elem y1 (range one (succ size)))]
+        (have <a> (= y1 (succ size)) :by ((insert-count-not-elem T s size z)))
+        (assume [y2 int
+                 Hy2 (elem y2 (range one size))])))))
