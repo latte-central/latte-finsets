@@ -8,14 +8,15 @@
                                           forall lambda defimplicit deflemma qed
                                           assume have pose proof lambda forall]]
             [latte.utils :as utils]
-            [latte.quant :as q :refer [exists]]
-            [latte.prop :as p :refer [<=> and or not]]
-            [latte.equal :as eq :refer [equal]]
+            [latte-prelude.quant :as q :refer [exists]]
+            [latte-prelude.prop :as p :refer [<=> and or not]]
+            [latte-prelude.equal :as eq :refer [equal]]
 
-            [latte.classic :as classic]
+            [latte-prelude.classic :as classic]
 
             [latte-sets.core :as set :refer [set elem forall-in exists-in subset seteq]]
             [latte-sets.rel :as rel :refer [rel]]
+            [latte-sets.powerrel :as prel]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
             [latte-integers.core :as int :refer [int = zero one succ]]
@@ -23,7 +24,7 @@
             [latte-integers.ord :as ord :refer [< <=]]))
 
 (definition range
-  "The range set from `m` to `n`."
+  "The range set from `m` to `n` (inclusive)."
   [[m int] [n int]]
   (lambda [k int]
     (and (<= m k)
@@ -67,119 +68,35 @@
 
 (defthm range-one
   [[n int]]
-  (forall-in [k int (range n n)]
+  (forall-in [k (range n n)]
     (= k n)))
 
 (proof 'range-one
   (have <a> (= n n) :by (eq/eq-refl n))
   (qed  ((range-eq n n) <a>)))
 
-(definition counted-def
-  "The set `s` is counted from 1 to `n`"
-  [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (and (pfun cf s (range one n))
-       (pfun/pbijective cf s (range one n))))
-
-(defimplicit counted
-  "The set `s` is counted from 1 to `n`, cf. [[counted-def]]"
-  [def-env ctx [s s-ty] [cf cf-ty] [n n-ty]]
-  (let [[T _] (rel/fetch-rel-type def-env ctx cf-ty)]
-    (list #'counted-def T s cf n)))
-
-;; since we want `counted` to be opaque we need introduction and eliminations rules.
-
-(defthm counted-intro-thm
-  "The introduction rule for the counted predicate."
-  [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (==> (pfun cf s (range one n))
-       (pfun/pbijective cf s (range one n))
-       (counted s cf n)))
-
-(proof 'counted-intro-thm
-  (assume [H1 (pfun cf s (range one n))
-           H2 (pfun/pbijective cf s (range one n))]
-    (have <a> (counted s cf n) :by (p/and-intro H1 H2)))
-  (qed <a>))
-
-(defimplicit counted-intro
-  "The introduction rule for the [[counted]] predicate, cf. [[counted-intro-thm]]."
-  [def-env ctx [s s-ty] [cf cf-ty] [n int]]
-  (let [T (set/fetch-set-type def-env ctx s-ty)]
-    (list #'counted-intro-thm T s cf n)))
-
-(defthm counted-elim-pfun-thm
-  "The first elimination rule for the [[counted]] predicate: the counted relation
-must be a partial function."
-  [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (==> (counted s cf n)
-       (pfun cf s (range one n))))
-
-(proof 'counted-elim-pfun-thm
-  (assume [H (counted s cf n)]
-    (have <a> _ :by (p/and-elim-left H)))
-  (qed <a>))
-
-(defimplicit counted-elim-pfun
-  "The first elimination rule for the [[counted]] predicate: the counted relation
-must be a partial function, cf. [[counted-elim-pfun-thm]]."
-  [def-env ctx [s s-ty] [cf cf-ty] [n n-ty]]
-  (let [T (set/fetch-set-type def-env ctx s-ty)]
-    (list #'counted-elim-pfun-thm T s cf n)))
-
-(defthm counted-elim-pbijective-thm
-  "The second elimination rule for the [[counted]] predicate: the counted relation
-must be a biject with `(range 1 n)`."
-  [[T :type] [s (set T)] [cf (rel T int)] [n int]]
-  (==> (counted s cf n)
-       (pfun/pbijective cf s (range one n))))
-
-(proof 'counted-elim-pbijective-thm
-  (assume [H (counted s cf n)]
-    (have <a> _ :by (p/and-elim-right H)))
-  (qed <a>))
-
-(defimplicit counted-elim-pbijective
-  "The first elimination rule for the [[counted]] predicate: the counted relation
-must be a biject with `(range 1 n)`the counted relation, cf. [[counted-elim-pbijective-thm]]."
-  [def-env ctx [s s-ty] [cf cf-ty] [n n-ty]]
-  (let [T (set/fetch-set-type def-env ctx s-ty)]
-    (list #'counted-elim-pbijective-thm T s cf n)))
-
-;; now we make the counted predicate opaque
-(utils/set-opacity! #'counted-def true)
-
-(defn decomposer-counted-type [t]
-  (if (clojure.core/and (seq? t)
-                        (seq t)
-                        (clojure.core/= (count t) 5)
-                        (clojure.core/= (first t) #'latte-finsets.core/counted-def))
-    (do
-      (into [] (rest t)))
-    ;; XXX: cannot decompose further because
-    ;; we cannot retrieve the x and y of the
-    ;; definition ... add dummy witnesses ?
-    (throw (ex-info "Cannot infer a counted-type" {:type t}))))
-
-(defn decompose-counted-type [def-env ctx t]
-  (utils/decomposer decomposer-counted-type def-env ctx t))
+(definition finite-prop
+  "The property a finite set must fulfill."
+  [[T :type] [s (set T)] [n int] [f (rel T int)]]
+  (and (pfun/pfun f s (range one n))
+       (pfun/pbijective f s (range one n))))
 
 (definition finite-def
-  "The definition of a finite set: `s` is finite
-if the function `cf` counts the number `n` of elements in `s`,
- see [[counted]]."
-  [[T :type] [s (set T)] [cf (rel T int)]]
+  "The definition of a finite set (of cardinal `n`)."
+  [[T :type] [s (set T)]]
   (exists [n int]
-    (counted s cf n)))
+    (prel/rel-ex (lambda [f (rel T int)]
+                   (finite-prop T s n f)))))
 
 ;; Remark : the counting function must be passed
 ;; as a parameter because we cannot existentially
 ;; quantify over it... (universe issue?)
 
 (defimplicit finite
-  "The set `s` is finite according to counting function `cf`, see [[finite-def]]."
-  [def-env ctx [s s-ty] [cf cf-ty]]
+  "The set `s` is finite, see [[finite-def]]."
+  [def-env ctx [s s-ty]]
   (let [T (set/fetch-set-type def-env ctx s-ty)]
-    (list #'finite-def T s cf)))
+    (list #'finite-def T s)))
 
 (defaxiom the-card-ax
   "The axiomatic definition of the cardinal number for finite sets."
