@@ -98,31 +98,11 @@
   (let [T (set/fetch-set-type def-env ctx s-ty)]
     (list #'finite-def T s)))
 
-(defaxiom the-card-ax
-  "The axiomatic definition of the cardinal number for finite sets."
-  [[T :type] [s (set T)] [cf (rel T int)] [n int] [cnt (counted s cf n)]]
-  int)
-
-(defimplicit the-card
-  "The cardinal number of a set counted by `cnt` of type `(counted s cf n)`,
- cf. [[counted]]."
-  [def-env ctx [cnt cnt-ty]]
-  (let [[T s cf n] (decompose-counted-type def-env ctx cnt-ty)]
-    (list #'the-card-ax T s cf n cnt)))
-
-(defaxiom the-card-prop-ax
-  "The defining axiomatic property of the cardinal number for finite sets."
-  [[T :type] [s (set T)] [cf (rel T int)] [n int] [cnt (counted s cf n)]]
-  (= (the-card cnt) n))
-
-(defimplicit the-card-prop
-  "The defining property of the cardinal number of a finite set.
-The `cnt` argument is a proof that the set can be counted,
- of type `(counted s cf n)`, cf. [[the-card-prop-ax]]."
-  [def-env ctx [cnt cnt-ty]]
-  (let [[T s cf n] (decompose-counted-type def-env ctx cnt-ty)]
-    (list #'the-card-prop-ax T s cf n cnt)))
-
+(deflemma card-lem
+  [[T :type] [s (set T)] [n1 int] [n2 int] [f (rel T int)]]
+  (==> (finite-prop T s n1 f)
+       (finite-prop T s n2 f)
+       (= n1 n2)))
 
 ;; the emptyset case
 
@@ -134,8 +114,8 @@ The `cnt` argument is a proof that the set can be counted,
   (assume [x T
            Hx (elem x (set/emptyset T))]
     (have <a> p/absurd :by Hx)
-    (have <b> _ :by (Hx (forall-in [y1 U to]
-                                   (forall-in [y2 U to]
+    (have <b> _ :by (Hx (forall-in [y1 to]
+                                   (forall-in [y2 to]
                                               (==> (f x y1)
                                                    (f x y2)
                                                    (equal y1 y2)))))))
@@ -149,9 +129,9 @@ The `cnt` argument is a proof that the set can be counted,
   (assume [x1 T
            Hx1 (elem x1 (set/emptyset T))]
     (have <a> p/absurd :by Hx1)
-    (have <b> _ :by (Hx1 (forall-in [x2 T (set/emptyset T)]
-                           (forall-in [y1 U to]
-                             (forall-in [y2 U to]
+    (have <b> _ :by (Hx1 (forall-in [x2 (set/emptyset T)]
+                           (forall-in [y1 to]
+                             (forall-in [y2 to]
                                (==> (f x1 y1)
                                     (f x2 y2)
                                     (equal y1 y2)
@@ -159,8 +139,8 @@ The `cnt` argument is a proof that the set can be counted,
   (qed <b>))
 
 (deflemma emptyset-psurjective
-  [[T :type] [cf (rel T int)]]
-  (pfun/psurjective cf (set/emptyset T) (range one zero)))
+  [[T :type] [f (rel T int)]]
+  (pfun/psurjective f (set/emptyset T) (range one zero)))
 
 (proof 'emptyset-psurjective
   (assume [y int
@@ -170,55 +150,46 @@ The `cnt` argument is a proof that the set can be counted,
           :by ((range-empty one zero)
                <a> y))
     (have <c> p/absurd :by (<b> Hy))
-    (have <d> _ :by (<c> (exists-in [x T (set/emptyset T)]
-                           (cf x y)))))
+    (have <d> _ :by (<c> (exists-in [x (set/emptyset T)]
+                           (f x y)))))
   (qed <d>))
 
-(deflemma emptyset-counted
-  [[T :type] [cf (rel T int)]]
-  (counted (set/emptyset T) cf zero))
 
-(proof 'emptyset-counted
-  (qed ((counted-intro (set/emptyset T) cf zero)
-        (emptyset-pfun T int cf (range one zero))
-        (p/and-intro (emptyset-pinjective T int cf (range one zero))
-                     (emptyset-psurjective T cf)))))
-
-(defthm finite-emptyset-thm
-  "The emptyset of type `T` is finite, whatever the counting function."
-  [[T :type] [cf (rel T int)]]
-  (finite (set/emptyset T) cf))
-
-(proof 'finite-emptyset-thm
-  (qed ((q/ex-intro (lambda [k int]
-                      (counted (set/emptyset T) cf k))
-                    zero)
-        (emptyset-counted T cf))))
-
-(definition zero-count
-  "This is a dummy counting function for use in [[finite-emptyset]]."
+(deflemma finite-emptyset-prop
   [[T :type]]
-  (lambda [x T]
-    (lambda [k int]
-      (= k zero))))
+  (finite-prop T (set/emptyset T) zero (rel/emptyrel T int)))
 
-(definition finite-emptyset
-  "The emptyset is finite."
+(proof 'finite-emptyset-prop
+  (pose f := (rel/emptyrel T int))
+  (pose from := (set/emptyset T))
+  (pose to := (range one zero))
+  (have <a> (pfun f from to)
+        :by (emptyset-pfun T int f to))
+  (have <b> (pfun/pbijective f from to)
+        :by (p/and-intro (emptyset-pinjective T int f to)
+                         (emptyset-psurjective T f)))
+  (qed (p/and-intro <a> <b>)))
+
+(defthm finite-emptyset
+  "The emptyset of type `T` is finite."
   [[T :type]]
-  (finite-emptyset-thm T (zero-count T)))
+  (finite (set/emptyset T)))
 
-(defthm card-emptyset-thm
-  [[T :type] [cf (rel T int)]]
-  (= (the-card (emptyset-counted T cf)) zero))
+(proof 'finite-emptyset
+  (pose R := (rel/emptyrel T int))
+  (have <a> (finite-prop T (set/emptyset T) zero R) 
+        :by (finite-emptyset-prop T))
+  (have <b> _
+    :by ((prel/rel-ex-intro (lambda [f (rel T int)] 
+                              (finite-prop T (set/emptyset T) zero f)) R)
+         <a>))
+  (have <c> _ :by ((q/ex-intro (lambda [n int] 
+                                 (prel/rel-ex (lambda [f (rel T int)] 
+                                                (finite-prop T (set/emptyset T) n f)))) zero)
+                   <b>))
+  (qed <c>))
 
-(proof 'card-emptyset-thm
-  (have <cnt> _ :by (emptyset-counted T cf))
-  (qed (the-card-prop <cnt>)))
-
-(definition card-emptyset
-  "The cardinal of the emptyset is zero."
-  [[T :type]]
-  (card-emptyset-thm T (zero-count T)))
+;; >>>>>>> TODO : not yet updated <<<<<<<<<
 
 ;; singletons
 
