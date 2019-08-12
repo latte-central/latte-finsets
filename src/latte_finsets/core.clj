@@ -98,11 +98,31 @@
   (let [T (set/fetch-set-type def-env ctx s-ty)]
     (list #'finite-def T s)))
 
-(deflemma card-lem
+
+
+(deflemma card-single-prop
   [[T :type] [s (set T)] [n1 int] [n2 int] [f (rel T int)]]
   (==> (finite-prop T s n1 f)
        (finite-prop T s n2 f)
        (= n1 n2)))
+
+(proof 'card-single-prop
+  (assume [Hf1 _ Hf2 _]
+    (have <H1-1> (forall-in [x s]
+                   (forall-in [k1 (range one n1)]
+                     (forall-in [k2 (range one n1)]
+                       (==> (f x k1)
+                            (f x k2)
+                            (= k1 k2)))))
+          :by (p/and-elim-left Hf1))
+    (have <H1-2> (forall-in [x s]
+                   (forall-in [k1 (range one n2)]
+                     (forall-in [k2 (range one n2)]
+                       (==> (f x k1)
+                            (f x k2)
+                            (= k1 k2)))))
+          :by (p/and-elim-left Hf2))
+    (have <H2-1> ())))
 
 ;; the emptyset case
 
