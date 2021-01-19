@@ -2,11 +2,11 @@
   "The formalization of finite sets.
 "
 
-  (:refer-clojure :exclude [and or not set <= < = int range])
+  (:refer-clojure :exclude [and or not set <= < = int range =])
 
   (:require [latte.core :as latte :refer [definition defthm defaxiom defnotation
                                           forall lambda defimplicit deflemma qed
-                                          assume have pose proof lambda forall]]
+                                          assume have pose proof try-proof lambda forall]]
             [latte.utils :as utils]
             [latte-prelude.quant :as q :refer [exists]]
             [latte-prelude.prop :as p :refer [<=> and or not]]
@@ -14,30 +14,30 @@
 
             [latte-prelude.classic :as classic]
 
-            [latte-sets.core :as set :refer [set elem forall-in exists-in subset seteq]]
+            [latte-sets.set :as set :refer [set elem subset seteq]]
+            [latte-sets.quant :as sq :refer [forall-in exists-in]]
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.powerrel :as prel]
             [latte-sets.pfun :as pfun :refer [pfun]]
                        
-            [latte-integers.core :as int :refer [int = zero one succ]]
-            [latte-integers.nat :as nat :refer [nat]]
-            [latte-integers.ord :as ord :refer [< <=]]))
+            [latte-nats.core :as nat :refer [zero one succ nat =]]
+            [latte-nats.ord :as ord :refer [< <=]]))
 
 (definition range
   "The range set from `m` to `n` (inclusive)."
-  [[m int] [n int]]
-  (lambda [k int]
+  [[m nat] [n nat]]
+  (lambda [k nat]
     (and (<= m k)
          (<= k n))))
 
 (defthm range-empty
-  [[m int] [n int]]
+  [[m nat] [n nat]]
   (==> (< n m)
-       (forall [k int] (not (elem k (range m n))))))
+       (forall [k nat] (not (elem k (range m n))))))
 
 (proof 'range-empty
   (assume [Hinf (< n m)]
-    (assume [k int
+    (assume [k nat
              Hk (elem k (range m n))]
       (have <a> (<= m n) :by ((ord/le-trans m k n)
                               (p/and-elim-left Hk)
@@ -48,26 +48,25 @@
   (qed <d>))
 
 (defthm range-eq
-  [[m int] [n int]]
+  [[m nat] [n nat]]
   (==> (= m n)
-       (forall [k int]
+       (forall [k nat]
          (==> (elem k (range m n))
               (= k n)))))
 
 (proof 'range-eq
   (assume [Heq (= m n)
-           k int
+           k nat
            Hk (elem k (range m n))]
     (have <a> (elem k (range n n))
-          :by (eq/eq-subst (lambda [i int]
-                             (elem k (range i n))) Heq Hk))
+          :by (eq/rewrite Hk Heq))
     (have <b> (<= n k) :by (p/and-elim-left <a>))
     (have <c> (<= k n) :by (p/and-elim-right <a>))
     (have <d> (= k n) :by (eq/eq-sym ((ord/le-antisym n k) <b> <c>))))
   (qed <d>))
 
 (defthm range-one
-  [[n int]]
+  [[n nat]]
   (forall-in [k (range n n)]
     (= k n)))
 
@@ -77,26 +76,40 @@
 
 (definition finite-prop
   "The property a finite set must fulfill."
-  [[T :type] [s (set T)] [n int] [f (rel T int)]]
-  (and (pfun/pfun f s (range one n))
+  [[?T :type] [s (set T)] [n nat] [f (rel T nat)]]
+  (and (pfun/pfun f s)
        (pfun/pbijective f s (range one n))))
 
-(definition finite-def
+(definition finite
   "The definition of a finite set (of cardinal `n`)."
-  [[T :type] [s (set T)]]
-  (exists [n int]
-    (prel/rel-ex (lambda [f (rel T int)]
-                   (finite-prop T s n f)))))
+  [[?T :type] [s (set T)]]
+  (exists [n nat]
+    (prel/rel-ex (lambda [f (rel T nat)]
+                   (finite-prop s n f)))))
 
-;; Remark : the counting function must be passed
-;; as a parameter because we cannot existentially
-;; quantify over it... (universe issue?)
+(defthm finite-card-single
+  [[?T :type] [s (set T)]]
+  (forall [n1 n2 nat]
+    (==> (prel/rel-ex (lambda [f1 (rel T nat)]
+                        (finite-prop s n1 f1)))
+         (prel/rel-ex (lambda [f2 (rel T nat)]
+                        (finite-prop s n2 f2)))
+         (= n1 n2))))
 
-(defimplicit finite
-  "The set `s` is finite, see [[finite-def]]."
-  [def-env ctx [s s-ty]]
-  (let [T (set/fetch-set-type def-env ctx s-ty)]
-    (list #'finite-def T s)))
+(try-proof 'finite-card-single-thm
+  (assume [n1 _
+           n2 _
+           Hn1 _
+           Hn2 _]
+    (assume [f1 (rel T nat)
+             Hf1 (finite-prop s n1 f1)]
+      (assume [f2 (rel T nat)
+               Hf2 (finite-prop s n2 f2)]
+        "We proceed by contradiction."
+        (assume [Hneq (not (= n1 n2))]
+          (exists 
+        
+    ))))
 
 
 
