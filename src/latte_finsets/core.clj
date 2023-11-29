@@ -4,7 +4,8 @@
 
   (:refer-clojure :exclude [and or not set <= < = int range =])
 
-  (:require [latte.core :as latte :refer [definition defthm defaxiom defnotation
+  (:require [latte.core :as latte :refer [definition try-definition
+                                          defthm defaxiom defnotation
                                           forall lambda defimplicit deflemma qed
                                           assume have pose proof try-proof lambda forall]]
             [latte.utils :as utils]
@@ -18,7 +19,7 @@
             [latte-sets.quant :as sq :refer [forall-in exists-in]]
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.powerrel :as prel]
-            [latte-sets.pfun :as pfun :refer [pfun]]
+            [latte-sets.pfun :as pfun]
                        
             [latte-nats.core :as nat :refer [zero one succ nat =]]
             [latte-nats.ord :as ord :refer [< <=]]))
@@ -76,15 +77,14 @@
 
 (definition finite-prop
   "The property a finite set must fulfill."
-  [[?T :type] [s (set T)] [n nat] [f (rel T nat)]]
-  (and (pfun/pfun f s)
-       (pfun/pbijective f s (range one n))))
+  [[?T :type] [s (set T)] [n nat] [f (rel nat T)]]
+  (pfun/bijection f (range one n) s))
 
 (definition finite
   "The definition of a finite set (of cardinal `n`)."
   [[?T :type] [s (set T)]]
   (exists [n nat]
-    (prel/rel-ex (lambda [f (rel T nat)]
+    (prel/rel-ex (lambda [f (rel nat T)]
                    (finite-prop s n f)))))
 
 (defthm finite-card-single

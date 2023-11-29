@@ -6,9 +6,9 @@
   :dependencies [[org.clojure/clojure "1.10.1"]
                  [latte "1.0b10-SNAPSHOT"]
                  [latte-sets "1.0b10-SNAPSHOT"]
-                 [latte-nats "0.4.0-SNAPSHOT"]]
+                 [latte-nats "0.7.0-SNAPSHOT"]]
   :codox {:output-path "docs"
           :metadata {:doc/format :markdown}
           :namespaces [latte-finsets.core
                        ]}
-  :plugins [[lein-codox "0.10.7"]])
+  :plugins [[lein-codox "0.10.8"]])
