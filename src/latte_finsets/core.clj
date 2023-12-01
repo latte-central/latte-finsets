@@ -5,7 +5,7 @@
   (:refer-clojure :exclude [and or not set <= < = int range =])
 
   (:require [latte.core :as latte :refer [definition try-definition
-                                          defthm defaxiom defnotation
+                                          defthm try-defthm defaxiom defnotation
                                           forall lambda defimplicit deflemma qed
                                           assume have pose proof try-proof lambda forall]]
             [latte.utils :as utils]
@@ -31,12 +31,12 @@
     (and (<= m k)
          (<= k n))))
 
-(defthm range-empty
+(defthm range-empty-cond
   [[m nat] [n nat]]
   (==> (< n m)
        (forall [k nat] (not (elem k (range m n))))))
 
-(proof 'range-empty
+(proof 'range-empty-cond
   (assume [Hinf (< n m)]
     (assume [k nat
              Hk (elem k (range m n))]
@@ -48,6 +48,49 @@
       (have <d> p/absurd :by ((p/absurd-intro (= n m)) <c> (p/and-elim-right Hinf)))))
   (qed <d>))
 
+(definition emptyrange
+  "The canonical empty range"
+  []
+  (range one zero))
+
+(defthm range-empty-one-zero
+  []
+  (forall [k nat] (not (elem k emptyrange))))
+
+(proof 'range-empty-one-zero
+  (have <a> (< zero one) :by (ord/lt-succ zero))
+  (qed ((range-empty-cond one zero) <a>)))
+
+(defthm range-empty-emptyset
+  [[m n nat]]
+  (==> (< n m)
+       (set/seteq (range m n) (set/emptyset nat))))
+
+(proof 'range-empty-emptyset
+  (assume [Hmn _]
+    "Subset case"
+    (assume [k nat
+             Hk (elem k (range m n))]
+      (have <a1> p/absurd :by ((range-empty-cond m n) Hmn k Hk))
+      (have <a> (elem k (set/emptyset nat)) :by (<a1> (elem k (set/emptyset nat)))))
+    
+    "Superset case"
+    (assume [k nat
+             Hk (elem k (set/emptyset nat))]
+      (have <b> (elem k (range m n)) :by (Hk (elem k (range m n)))))
+
+    (have <c> _ :by (p/and-intro <a> <b>)))
+
+  (qed <c>))
+
+(defthm emptyrange-emptyset
+  []
+  (set/seteq emptyrange (set/emptyset nat)))
+
+(proof 'emptyrange-emptyset
+  (have <a> (< zero one) :by (ord/lt-succ zero))
+  (qed ((range-empty-emptyset one zero) <a>)))
+ 
 (defthm range-eq
   [[m nat] [n nat]]
   (==> (= m n)
@@ -87,12 +130,64 @@
     (prel/rel-ex (lambda [f (rel nat T)]
                    (finite-prop s n f)))))
 
+(defthm range-one-finite
+  [n nat]
+  (finite (range one n)))
+
+(proof 'range-one-finite
+  (have <a> (finite-prop (range one n) n (rel/identity nat))
+        :by (pfun/ridentity-bijection (range one n)))
+  
+  (have <b> _ :by ((prel/rel-ex-intro (lambda [f (rel nat nat)]
+                                        (finite-prop (range one n) n f)) (rel/identity nat)) 
+                   <a>))
+
+  (have <c> _ :by ((q/ex-intro (lambda [$ nat]
+                                 (prel/rel-ex (lambda [f (rel nat nat)]
+                                                (finite-prop (range one n) $ f)))) n)
+                   <b>))
+
+  (qed <c>))
+
+(defthm emptyset-finite
+  [T :type]
+  (finite (set/emptyset T)))
+
+(proof 'emptyset-finite
+  "We select n=zero and f=emptyrel"
+
+  (pose P := (lambda [s (set nat)]
+               (pfun/bijection (rel/emptyrel nat T) s (set/emptyset T))))
+
+  (have <a> (P (set/emptyset nat))
+        :by (pfun/emptyrel-bijection nat T))
+
+  (have <b> (seteq (set/emptyset nat) (range one zero))
+        :by ((set/seteq-sym (range one zero) (set/emptyset nat))
+             (emptyrange-emptyset)))
+
+  (have <c> (P (range one zero))
+        :by ((set/seteq-subst-prop P (set/emptyset nat) (range one zero))
+             <b> <a>))
+
+  (have <d> _ :by ((prel/rel-ex-intro (lambda [f (rel nat T)]
+                                        (finite-prop (set/emptyset T) zero f))
+                      (rel/emptyrel nat T)) <c>))
+
+  (have <e> _ :by ((q/ex-intro (lambda [$ nat]
+                                 (prel/rel-ex (lambda [f (rel nat T)]
+                                                (finite-prop (set/emptyset T) $ f))))
+                               zero)
+                   <d>))
+
+  (qed <e>))
+
 (defthm finite-card-single
   [[?T :type] [s (set T)]]
   (forall [n1 n2 nat]
-    (==> (prel/rel-ex (lambda [f1 (rel T nat)]
+    (==> (prel/rel-ex (lambda [f1 (rel nat T)]
                         (finite-prop s n1 f1)))
-         (prel/rel-ex (lambda [f2 (rel T nat)]
+         (prel/rel-ex (lambda [f2 (rel nat T)]
                         (finite-prop s n2 f2)))
          (= n1 n2))))
 
@@ -101,16 +196,16 @@
            n2 _
            Hn1 _
            Hn2 _]
-    (assume [f1 (rel T nat)
+
+    (assume [f1 (rel nat T)
              Hf1 (finite-prop s n1 f1)]
-      (assume [f2 (rel T nat)
+
+      (assume [f2 (rel nat T)
                Hf2 (finite-prop s n2 f2)]
         "We proceed by contradiction."
         (assume [Hneq (not (= n1 n2))]
-          (exists 
-        
-    ))))
-
+          
+)))))
 
 
 (deflemma card-single-prop
