@@ -16,6 +16,7 @@
             [latte-prelude.classic :as classic]
 
             [latte-sets.set :as set :refer [set elem subset seteq]]
+            [latte-sets.algebra :as sa]
             [latte-sets.quant :as sq :refer [forall-in exists-in]]
             [latte-sets.rel :as rel :refer [rel]]
             [latte-sets.powerrel :as prel]
@@ -182,407 +183,350 @@
 
   (qed <e>))
 
-(defthm finite-card-single
-  [[?T :type] [s (set T)]]
-  (forall [n1 n2 nat]
-    (==> (prel/rel-ex (lambda [f1 (rel nat T)]
-                        (finite-prop s n1 f1)))
-         (prel/rel-ex (lambda [f2 (rel nat T)]
-                        (finite-prop s n2 f2)))
-         (= n1 n2))))
+(definition swap
+  [[?T :type] [a b T]]
+  (lambda [x y T]
+    (p/and* (==> (equal x a) (equal y b))
+            (==> (equal x b) (equal y a))
+            (==> (not (equal x a)) 
+                 (not (equal x b))
+                 (equal y x)))))
 
-(try-proof 'finite-card-single-thm
-  (assume [n1 _
-           n2 _
-           Hn1 _
-           Hn2 _]
+(defthm swap-ab
+  [[?T :type] [a b T]]
+  ((swap a b) a b))
 
-    (assume [f1 (rel nat T)
-             Hf1 (finite-prop s n1 f1)]
+(proof 'swap-ab-thm
+  (assume [H1 (equal a a)]
+    (have <a> (equal b b) :by (eq/eq-refl b)))
+  (assume [H2 (equal a b)]
+    (have <b> (equal b a) :by (eq/eq-sym H2)))
 
-      (assume [f2 (rel nat T)
-               Hf2 (finite-prop s n2 f2)]
-        "We proceed by contradiction."
-        (assume [Hneq (not (= n1 n2))]
-          
-)))))
+  (assume [H3a (not (equal a a))
+           H3b (not (equal a b))]
+    (have <c1> p/absurd :by (H3a (eq/eq-refl a)))
+    (have <c> (equal b a) :by (<c1> (equal b a))))
+
+  (qed (p/and-intro* <a> <b> <c>)))
+
+(defthm swap-ba
+  [[?T :type] [a b T]]
+  ((swap a b) b a))
+
+(proof 'swap-ba-thm
+  (assume [H1 (equal b a)]
+    (have <a> (equal a b) :by (eq/eq-sym H1)))
+
+  (assume [H2 (equal b b)]
+    (have <b> (equal a a) :by (eq/eq-refl a)))
+
+  (assume [H3a (not (equal b a))
+           H3b (not (equal b b))]
+    (have <c1> p/absurd :by (H3b (eq/eq-refl b)))
+    (have <c> (equal a b) :by (<c1> (equal a b))))
+
+  (qed (p/and-intro* <a> <b> <c>)))
+
+(defthm swap-other
+  [[?T :type] [a b T]]
+  (forall [x y T]
+    (==> (not (equal x a))
+         (not (equal x b))
+         (equal y x)
+         ((swap a b) x y))))
+
+(proof 'swap-other-thm
+  (assume [x T y T
+           Hneqa (not (equal x a))
+           Hneqb (not (equal x b))
+           Heq (equal y x)]
+
+    (assume [H1 (equal x a)]
+      (have <a1> p/absurd :by (Hneqa H1))
+      (have <a> (equal y b) :by (<a1> (equal y b))))
+
+    (assume [H2 (equal x b)]
+      (have <b1> p/absurd :by (Hneqb H2))
+      (have <b> (equal y a) :by (<b1> (equal y a))))
+
+    (assume [H3a (not (equal x a))
+             H3b (not (equal x b))]
+      (have <c> (equal y x) :by Heq))
+
+    (have <d> _ :by (p/and-intro* <a> <b> <c>)))
+
+  (qed <d>))
+
+(defthm swap-rev
+  [[?T :type] [a b T]]
+  (forall [x y T]
+    (==> ((swap a b) x y)
+         ((swap a b) y x))))
+
+(proof 'swap-rev-thm
+  (assume [x T y T
+           Hswap ((swap a b) x y)]
+    (have <acut> (or (equal x a) (not (equal x a)))
+          :by (classic/excluded-middle-ax (equal x a)))
+    (have <bcut> (or (equal x b) (not (equal x b)))
+          :by (classic/excluded-middle-ax (equal x b)))
+
+    "We proceed by case analysis"
+
+    (assume [Heqa (equal x a)]
+      
+      (have <a> (equal y b)
+            :by ((p/and-elim* 1 Hswap) Heqa))
+      
+      (have <b> ((swap a b) b a)
+            :by (swap-ba a b))
+
+      (have <c> ((swap a b) b x)
+            :by (eq/eq-subst (lambda [$ T] ((swap a b) b $)) (eq/eq-sym Heqa) <b>))
+
+      (have <d> ((swap a b) y x)
+            :by (eq/eq-subst (lambda [$ T] ((swap a b) $ x)) (eq/eq-sym <a>) <c>)))
+
+    (assume [Hneqa (not (equal x a))]
+      (assume [Heqb (equal x b)]
+        
+        (have <e> (equal y a)
+              :by ((p/and-elim* 2 Hswap) Heqb))
+
+        (have <f> ((swap a b) a b)
+              :by (swap-ab a b))
+
+        (have <g> ((swap a b) y b)
+              :by (eq/eq-subst (lambda [$ T] ((swap a b) $ b)) (eq/eq-sym <e>) <f>))
+
+        (have <h> ((swap a b) y x)
+              :by (eq/eq-subst (lambda [$ T] ((swap a b) y $)) (eq/eq-sym Heqb) <g>)))
+
+      (assume [Hneqb (not (equal x b))]
+        (have <i> (equal x y) :by (eq/eq-sym ((p/and-elim* 3 Hswap) Hneqa Hneqb)))
+        (assume [Hya (equal y a)]
+          (have <j1> (equal x a) :by (eq/eq-subst (lambda [$ T] (equal $ a)) (eq/eq-sym <i>) Hya))
+          (have <j> p/absurd :by (Hneqa <j1>)))
+        (assume [Hyb (equal y b)]
+          (have <k1> (equal x b) :by (eq/eq-subst (lambda [$ T] (equal $ b)) (eq/eq-sym <i>) Hyb))
+          (have <k> p/absurd :by (Hneqb <k1>)))
+
+        (have <l> ((swap a b) y x) :by ((swap-other a b) y x <j> <k> <i>)))
+
+      (have <m> _ :by (p/or-elim <bcut> <h> <l>)))
 
 
-(deflemma card-single-prop
-  [[T :type] [s (set T)] [n1 int] [n2 int] [f (rel T int)]]
-  (==> (finite-prop T s n1 f)
-       (finite-prop T s n2 f)
-       (= n1 n2)))
+    (have <n> _ :by (p/or-elim <acut> <d> <m>)))
 
-(proof 'card-single-prop
-  (assume [Hf1 _ Hf2 _]
-    (have <H1-1> (forall-in [x s]
-                   (forall-in [k1 (range one n1)]
-                     (forall-in [k2 (range one n1)]
-                       (==> (f x k1)
-                            (f x k2)
-                            (= k1 k2)))))
-          :by (p/and-elim-left Hf1))
-    (have <H1-2> (forall-in [x s]
-                   (forall-in [k1 (range one n2)]
-                     (forall-in [k2 (range one n2)]
-                       (==> (f x k1)
-                            (f x k2)
-                            (= k1 k2)))))
-          :by (p/and-elim-left Hf2))
-    (have <H2-1> ())))
+  (qed <n>))
 
-;; the emptyset case
 
-(deflemma emptyset-pfun
-  [[T :type] [U :type] [f (rel T U)] [to (set U)]]
-  (pfun f (set/emptyset T) to))
+(defthm swap-functional
+  [[?T :type] [a b T] [s (set T)]]
+  (pfun/functional (swap a b) s s))
 
-(proof 'emptyset-pfun
-  (assume [x T
-           Hx (elem x (set/emptyset T))]
-    (have <a> p/absurd :by Hx)
-    (have <b> _ :by (Hx (forall-in [y1 to]
-                                   (forall-in [y2 to]
-                                              (==> (f x y1)
-                                                   (f x y2)
-                                                   (equal y1 y2)))))))
-  (qed <b>))
+(proof 'swap-functional-thm
+  (assume [x T Hx (elem x s)]
+    "To show: (sq/single-in s (lambda [y T] ((swap a b) x y)))"
+    (assume [y1 T Hy1 (elem y1 s)
+             y2 T Hy2 (elem y2 s)
+             Hsw1 ((swap a b) x y1)
+             Hsw2 ((swap a b) x y2)]
+      "To show: (equal y1 y2)"
+      (assume [Heqa (equal x a)]
+        (have <a1> (equal y1 b) :by ((p/and-elim* 1 Hsw1) Heqa))
+        (have <a2> (equal y2 b) :by ((p/and-elim* 1 Hsw2) Heqa))
+        (have <a> (equal y1 y2) :by (eq/eq-trans <a1> (eq/eq-sym <a2>))))
 
-(deflemma emptyset-pinjective
-  [[T :type] [U :type] [f (rel T U)] [to (set U)]]
-  (pfun/pinjective f (set/emptyset T) to))
+      (assume [Hneqa (not (equal x a))]
+        (assume [Heqb (equal x b)]
+          (have <b1> (equal y1 a) :by ((p/and-elim* 2 Hsw1) Heqb))
+          (have <b2> (equal y2 a) :by ((p/and-elim* 2 Hsw2) Heqb))
+          (have <b> (equal y1 y2) :by (eq/eq-trans <b1> (eq/eq-sym <b2>))))
 
-(proof 'emptyset-pinjective
-  (assume [x1 T
-           Hx1 (elem x1 (set/emptyset T))]
-    (have <a> p/absurd :by Hx1)
-    (have <b> _ :by (Hx1 (forall-in [x2 (set/emptyset T)]
-                           (forall-in [y1 to]
-                             (forall-in [y2 to]
-                               (==> (f x1 y1)
-                                    (f x2 y2)
-                                    (equal y1 y2)
-                                    (equal x1 x2))))))))
-  (qed <b>))
+        (assume [Hneqb (not (equal x b))]
+          (have <c1> (equal y1 x) :by ((p/and-elim* 3 Hsw1) Hneqa Hneqb))
+          (have <c2> (equal y2 x) :by ((p/and-elim* 3 Hsw2) Hneqa Hneqb))
+          (have <c> (equal y1 y2) :by (eq/eq-trans <c1> (eq/eq-sym <c2>))))
 
-(deflemma emptyset-psurjective
-  [[T :type] [f (rel T int)]]
-  (pfun/psurjective f (set/emptyset T) (range one zero)))
+        (have <d> _ :by (p/or-elim (classic/excluded-middle-ax (equal x b)) <b> <c>)))
 
-(proof 'emptyset-psurjective
-  (assume [y int
-           Hy (elem y (range one zero))]
-    (have <a> (< zero one) :by (ord/lt-succ zero))
-    (have <b> (not (elem y (range one zero)))
-          :by ((range-empty one zero)
-               <a> y))
-    (have <c> p/absurd :by (<b> Hy))
-    (have <d> _ :by (<c> (exists-in [x (set/emptyset T)]
-                           (f x y)))))
+      (have <e> _ :by (p/or-elim (classic/excluded-middle-ax (equal x a)) <a> <d>)))
+
+    (have <f> _ :by ((sq/single-in-intro s (lambda [y T] ((swap a b) x y)))
+                     <e>)))
+
+  (qed <f>))
+
+(defthm swap-serial
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/serial (swap a b) s s)))
+
+(proof 'swap-serial-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (assume [x T Hx (elem x s)]
+      "To show: (exists-in [y s] ((swap a b) x y))"
+      (assume [Heqa (equal x a)]
+        (have <a1> ((swap a b) x b)
+              :by (eq/eq-subst (lambda [$ T] ((swap a b) $ b)) (eq/eq-sym Heqa) (swap-ab a b)))
+        (have <a> _ :by ((sq/ex-in-intro s (lambda [$ T] ((swap a b) x $)) b) Hb <a1>)))
+
+      (assume [Hneqa (not (equal x a))]
+
+        (assume [Heqb (equal x b)]
+          (have <b1> ((swap a b) x a)
+                :by (eq/eq-subst (lambda [$ T] ((swap a b) $ a)) (eq/eq-sym Heqb) (swap-ba a b)))
+          (have <b> _ :by ((sq/ex-in-intro s (lambda [$ T] ((swap a b) x $)) a) Ha <b1>)))
+
+        (assume [Hneqb (not (equal x b))]
+          (have <c1> ((swap a b) x x)
+                :by ((swap-other a b) x x Hneqa Hneqb (eq/eq-refl x)))
+          (have <c> _ :by ((sq/ex-in-intro s (lambda [$ T] ((swap a b) x $)) x) Hx <c1>)))
+
+        (have <d> _ :by (p/or-elim (classic/excluded-middle-ax (equal x b)) <b> <c>)))
+
+      (have <e> _ :by (p/or-elim (classic/excluded-middle-ax (equal x a)) <a> <d>))))
+
+  (qed <e>))
+      
+(defthm swap-injective
+  [[?T :type] [a b T] [s (set T)]]
+  (pfun/injective (swap a b) s s))
+
+(proof 'swap-injective-thm
+  (assume [x1 T Hx1 (elem x1 s)
+           x2 T Hx2 (elem x2 s)
+           y1 T Hy1 (elem y1 s)
+           y2 T Hy2 (elem y2 s)
+           Hsw1 ((swap a b) x1 y1)
+           Hsw2 ((swap a b) x2 y2)
+           Heq (equal y1 y2)]
+    "To show: (equal x1 x2)"
+    (have <a> ((swap a b) y1 x1) :by ((swap-rev a b) x1 y1 Hsw1))
+    (have <b1> ((swap a b) y2 x2) :by ((swap-rev a b) x2 y2 Hsw2))
+    (have <b> ((swap a b) y1 x2) 
+          :by (eq/eq-subst (lambda [$ T] ((swap a b) $ x2)) (eq/eq-sym Heq) <b1>))
+    (have <c> (pfun/functional (swap a b) s s) :by (swap-functional a b s))
+    (have <d> (equal x1 x2) :by ((pfun/functional-elim (swap a b) s s)
+                                 <c> y1 Hy1 x1 Hx1 x2 Hx2 <a> <b>)))
+
+  (qed <d>))
+
+(defthm swap-injection
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/injection (swap a b) s s)))
+
+(proof 'swap-injection-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (have <a> _ :by (swap-functional a b s))
+    (have <b> _ :by ((swap-serial a b s) Ha Hb))
+    (have <c> _ :by (swap-injective a b s))
+
+    (have <d> _ :by (p/and-intro* <a> <b> <c>)))
+
   (qed <d>))
 
 
-(deflemma finite-emptyset-prop
-  [[T :type]]
-  (finite-prop T (set/emptyset T) zero (rel/emptyrel T int)))
+(defthm swap-surjective
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/surjective (swap a b) s s)))
 
-(proof 'finite-emptyset-prop
-  (pose f := (rel/emptyrel T int))
-  (pose from := (set/emptyset T))
-  (pose to := (range one zero))
-  (have <a> (pfun f from to)
-        :by (emptyset-pfun T int f to))
-  (have <b> (pfun/pbijective f from to)
-        :by (p/and-intro (emptyset-pinjective T int f to)
-                         (emptyset-psurjective T f)))
-  (qed (p/and-intro <a> <b>)))
+(proof 'swap-surjective-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (assume [y T Hy (elem y s)]
+      "We have to show: (exists-in [x s] ((swap a b) x y))"
+      (have <a> (pfun/serial (swap a b) s s) :by ((swap-serial a b s) Ha Hb))
+      (have <b> (exists-in [x s] ((swap a b) y x)) :by (<a> y Hy))
+      (assume [x T Hx (elem x s)
+               Hsw ((swap a b) y x)]
+        (have <c> ((swap a b) x y) :by ((swap-rev a b) y x Hsw))
+        (have <d> _ :by ((sq/ex-in-intro s (lambda [$ T] ((swap a b) $ y)) x) Hx <c>)))
+      (have <e> _ :by (sq/ex-in-elim <b> <d>))))
 
-(defthm finite-emptyset
-  "The emptyset of type `T` is finite."
-  [[T :type]]
-  (finite (set/emptyset T)))
-
-(proof 'finite-emptyset
-  (pose R := (rel/emptyrel T int))
-  (have <a> (finite-prop T (set/emptyset T) zero R) 
-        :by (finite-emptyset-prop T))
-  (have <b> _
-    :by ((prel/rel-ex-intro (lambda [f (rel T int)] 
-                              (finite-prop T (set/emptyset T) zero f)) R)
-         <a>))
-  (have <c> _ :by ((q/ex-intro (lambda [n int] 
-                                 (prel/rel-ex (lambda [f (rel T int)] 
-                                                (finite-prop T (set/emptyset T) n f)))) zero)
-                   <b>))
-  (qed <c>))
-
-;; >>>>>>> TODO : not yet updated <<<<<<<<<
-
-;; singletons
-
-(definition singleton-def
-  "The singleton set `{x}`."
-  [[T :type] [x T]]
-  (lambda [y T] (equal x y)))
-
-(defimplicit singleton
-  "The singleton set `{x}`, cf. [[singleton-def]]."
-  [def-env ctx [x x-ty]]
-  (list #'singleton-def x-ty x))
-
-(defthm singleton-thm
-  [[T :type] [x T]]
-  (elem x (singleton x)))
-
-(proof 'singleton-thm
-  (qed (eq/eq-refl x)))
-
-(definition one-count
-  "The counting relation for singletons."
-  [[T :type]]
-  (lambda [x T]
-    (lambda [k int]
-      (= k one))))
-
-(deflemma singleton-pfun
-  [[T :type] [x T]]
-  (pfun/pfun (one-count T) (singleton x) (range one one)))
-
-(proof 'singleton-pfun
-  (assume [z T
-           Hx (elem z (singleton x))]
-    (assume [y1 int
-             Hy1 (elem y1 (range one one))]
-      (have <a> (= y1 one) :by ((range-one one) y1 Hy1))
-      (assume [y2 int
-               Hy2 (elem y2 (range one one))]
-        (have <b> (= y2 one) :by ((range-one one) y2 Hy2))
-        (assume [Hf1 ((one-count T) x y1)
-                 Hf2 ((one-count T) x y2)]
-          (have <c> (= y1 y2) :by (eq/eq-trans <a> (eq/eq-sym <b>)))))))
-  (qed <c>))
-
-(deflemma singleton-pinjective
-  [[T :type] [x T]]
-  (pfun/pinjective (one-count T) (singleton x) (range one one)))
-
-(proof 'singleton-pinjective
-  (assume [x1 T
-           Hx1 (elem x1 (singleton x))]
-    (have <a> (equal x x1) :by Hx1)
-    (assume [x2 T
-             Hx2 (elem x2 (singleton x))]
-      (have <b> (equal x x2) :by Hx2)
-      (assume [y1 int
-               Hy1 (elem y1 (range one one))
-               y2 int
-               Hy2 (elem y2 (range one one))
-               Hf1 ((one-count T) x1 y1)
-               Hf2 ((one-count T) x2 y2)
-               Hyeq (= y1 y2)]
-        (have <c> (equal x1 x2) :by (eq/eq-trans (eq/eq-sym <a>) <b>)))))
-  (qed <c>))
-
-(deflemma singleton-psurjective
-  [[T :type] [x T]]
-  (pfun/psurjective (one-count T) (singleton x) (range one one)))
-
-(proof 'singleton-psurjective
-  (assume [y int
-           Hy (elem y (range one one))]
-    (have <a> (elem x (singleton x)) :by (singleton-thm T x))
-    (have <b> (= y one) :by ((range-one one) y Hy))
-    (have <c> ((one-count T) x y) :by <b>)
-    (have <e> _ :by ((q/ex-intro (lambda [z T]
-                                   (and (elem z (singleton x))
-                                        ((one-count T) z y))) x)
-                     (p/and-intro <a> <c>))))
   (qed <e>))
 
-(deflemma singleton-counted
-  [[T :type] [x T]]
-  (counted (singleton x) (one-count T) one))
+(defthm swap-surjection
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/surjection (swap a b) s s)))
 
-(proof 'singleton-counted
-  (qed ((counted-intro (singleton x) (one-count T) one)
-        (singleton-pfun T x)
-        (p/and-intro (singleton-pinjective T x)
-                     (singleton-psurjective T x)))))
+(proof 'swap-surjection-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (have <a> (pfun/functional (swap a b) s s) :by (swap-functional a b s))
+    (have <b> (pfun/serial (swap a b) s s) :by ((swap-serial a b s) Ha Hb))
+    (have <c> (pfun/surjective (swap a b) s s) :by ((swap-surjective a b s) Ha Hb))
+    (have <d> _ :by (p/and-intro* <a> <b> <c>)))
 
-(defthm finite-singleton
-  "The emptyset of type `T` is finite, whatever the counting function."
-  [[T :type] [x T]]
-  (finite (singleton x) (one-count T)))
-
-(proof 'finite-singleton
-  (have <a> (counted (singleton x) (one-count T) one) :by (singleton-counted T x))
-  (qed ((q/ex-intro (lambda [k int]
-                      (counted (singleton x) (one-count T) k)) one)
-        <a>)))
-
-
-(definition the-card-singleton
-  "The cardinal of the singleton set `{x}`."
-  [[T :type] [x T]]
-  (the-card (singleton-counted T x)))
-
-(defthm the-card-singleton-prop
-  "The cardinal of a singleton is `one`."
-  [[T :type] [x T]]
-  (= (the-card-singleton T x) one))
-
-(proof 'the-card-singleton-prop
-  (qed (the-card-prop (singleton-counted T x))))
-
-
-(definition insert-def
-  "Insertion of element `x` in set `s`."
-  [[T :type] [x T] [s (set T)]]
-  (lambda [y T]
-    (or (equal y x)
-        (elem y s))))
-
-(defimplicit insert
-  "Insertion of element `x` in set `s`, cf. [[insert-def]]."
-  [def-env ctx [x T] [s s-ty]]
-  (list #'insert-def T x s))
-
-(defthm insert-prop-elem
-  [[T :type] [x T] [s (set T)]]
-  (elem x (insert x s)))
-
-(proof 'insert-prop-elem
-  (have <a> (equal x x) :by (eq/eq-refl x))
-  (qed (p/or-intro-left <a> (elem x s))))
-
-(defthm insert-prop-set
-  [[T :type] [x T] [s (set T)]]
-  (forall [y T]
-    (==> (elem y s)
-         (elem y (insert x s))))) ;;; XXX : rewrite with subset
-
-(proof 'insert-prop-set
-  (assume [y T
-           Hy (elem y s)]
-    (have <a> _ :by (p/or-intro-right (equal y x) Hy)))
-  (qed <a>))
-
-(defthm insert-prop-neq
-  [[T :type] [x T] [s (set T)]]
-  (forall [y T]
-    (==> (elem y (insert x s))
-         (not (equal y x))
-         (elem y s))))
-
-(proof 'insert-prop-neq
-  (assume [y T
-           H1y (elem y (insert x s))
-           H2y (not (equal y x))]
-    (assume [H1 (equal y x)]
-      (have <a1> p/absurd :by (H2y H1))
-      (have <a> (elem y s) :by (<a1> (elem y s))))
-    (assume [H2 (elem y s)]
-      (have <b> (elem y s) :by H2))
-    (have <c> (elem y s)
-          :by (p/or-elim H1y (elem y s) <a> <b>)))
-  (qed <c>))
-
-(defthm insert-prop-idem
-  [[T :type] [x T] [s (set T)]]
-  (==> (elem x s)
-       (seteq s (insert x s))))
-
-(proof 'insert-prop-idem
-  (assume [Hx (elem x s)]
-    "First the subset case."
-    (assume [y T
-             Hy (elem y s)]
-      (have <a1> (elem y (insert x s)) :by ((insert-prop-set T x s) y Hy)))
-    (have <a> (subset s (insert x s)) :by <a1>)
-    "Second the supset case."
-    (assume [y T
-             Hy (elem y (insert x s))]
-      "We use classical reasoning."
-      (assume [Hyes (equal y x)]
-        (have <b> (elem y s) :by (eq/eq-subst (lambda [z T]
-                                                (elem z s))
-                                              (eq/eq-sym Hyes)
-                                              Hx)))
-      (assume [Hno (not (equal y x))]
-        (have <c> (elem y s) :by ((insert-prop-neq T x s)
-                                  y Hy Hno)))
-      (have <d> (or (equal y x)
-                    (not (equal y x))) :by (classic/excluded-middle-ax (equal y x)))
-      (have <e> (elem y s) :by (p/or-elim <d> (elem y s) <b> <c>)))
-    (have <f> (subset (insert x s) s) :by <e>)
-    (have <g> _ :by (p/and-intro <a> <f>)))
-  (qed <g>))
-
-(definition insert-count
-  [[T :type] [s (set T)] [size int]]
-  (lambda [y T]
-    (lambda [k int]
-      (and (==> (elem y s) (= k size))
-           (==> (not (elem y s)) (= k (succ size)))))))
-
-(deflemma insert-pfun-elem
-  [[T :type] [x T] [s (set T)] [size int]]
-  (==> (elem x s)
-       (pfun/pfun (insert-count T s size)  (insert x s) (range one size))))
-
-(proof 'insert-pfun-elem
-  (assume [Hx (elem x s)
-           z T
-           Hz (elem z (insert x s))]
-    (have <a1> (seteq s (insert x s)) :by ((insert-prop-idem T x s) Hx))
-    (have <a2> (set/set-equal s (insert x s))
-          :by ((set/seteq-implies-set-equal-ax T s (insert x s)) <a1>))
-    (have <a3> (<=> (elem z s)  ;;; XXX : define a substitution law for set-equal
-                                ;;;       also congruence
-                    (elem z (insert x s)))
-          :by (<a2> (lambda [w (set T)]
-                      (elem z w))))
-    (have <a> (elem z s) :by ((p/and-elim-right <a3>) Hz))
-    (assume [y1 int
-             Hy1 (elem y1 (range one size))
-             y2 int
-             Hy2 (elem y2 (range one size))
-             Hcount1 ((insert-count T s size) z y1)
-             Hcount2 ((insert-count T s size) z y2)]
-      (have <b> (= y1 size) :by ((p/and-elim-left Hcount1) <a>))
-      (have <c> (= y2 size) :by ((p/and-elim-left Hcount2) <a>))
-      (have <d> (= y1 y2) :by (eq/eq-trans <b> (eq/eq-sym <c>)))))
   (qed <d>))
 
+(defthm swap-bijective
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/bijective (swap a b) s s)))
 
-(comment
+(proof 'swap-bijective-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (have <a> (pfun/injective (swap a b) s s) :by (swap-injective a b s))
+    (have <b> (pfun/surjective (swap a b) s s) :by ((swap-surjective a b s) Ha Hb))
+    (have <c> _ :by (p/and-intro <a> <b>)))
+  (qed <c>))
 
-  (deflemma insert-count-not-elem
-    [[T :type] [s (set T)] [size int] [x T] [k int]]
-    (==> (not (elem x s))
-         ((insert-count T s size) x k)
-         (= k (succ size))))
+(defthm swap-bijection
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/bijection (swap a b) s s)))
 
-  (proof 'insert-count-not-elem
-    (assume [Hx (not (elem x s))
-             Hcount ((insert-count T s size) x k)]
-      (have <a> (==> (not (elem x s))
-                     (= k (succ size))) :by (p/and-elim-right Hcount))
-      (have <b> (= k (succ size)) :by (<a> Hx)))
-    (qed <b>))
+(proof 'swap-bijection-thm
+  (assume [Ha (elem a s)
+           Hb (elem b s)]
+    (have <a> (pfun/functional (swap a b) s s) :by (swap-functional a b s))
+    (have <b> (pfun/serial (swap a b) s s) :by ((swap-serial a b s) Ha Hb))
+    (have <c> (pfun/bijective (swap a b) s s) :by ((swap-bijective a b s) Ha Hb))
+    (have <d> _ :by (p/and-intro* <a> <b> <c>)))
 
-  (deflemma insert-pfun-not-elem
-    [[T :type] [x T] [s (set T)] [size int]]
-    (==> (not (elem x s))
-         (pfun/pfun (insert-count T s size)  (insert x s) (range one (succ size)))))
+  (qed <d>))
 
-  (proof 'insert-pfun-not-elem
-    (assume [Hx (not (elem x s))
-             z T
-             Hz (elem z (insert x s))]
-      (assume [y1 int
-               Hy1 (elem y1 (range one (succ size)))]
-        (have <a> (= y1 (succ size)) :by ((insert-count-not-elem T s size z)))
-        (assume [y2 int
-                 Hy2 (elem y2 (range one size))])))))
+(defthm swap-removal-bijection
+  [[?T :type] [a b T] [s (set T)]]
+  (==> (elem a s)
+       (elem b s)
+       (pfun/bijection (pfun/removal (swap a b) s a) (sa/remove s a) (sa/remove s b))))
+
+(proof 'swap-removal-bijection-thm
+  (assume [Ha _ Hb _]
+    (have <a> _ :by ((pfun/removal-bijection (swap a b) s s a)
+                     ((swap-bijection a b s) Ha Hb)
+                     b Hb
+                     Ha
+                     (swap-ab a b))))
+  (qed <a>))
+
+(defthm rem-bijection
+  [[?T :type] [f (rel T T)] [s (set T)] [a b T]]
+  (==> (elem a s)
+       (elem b s)
+       (prel/rel-ex (lambda [g (rel T T)] 
+                      (pfun/bijection g (sa/remove s a) (sa/remove s b))))))
+
+(proof 'rem-bijection-thm
+  (assume [Ha _ Hb _]
+    (have <a> _ :by ((prel/rel-ex-intro (lambda [g (rel T T)] 
+                                          (pfun/bijection g (sa/remove s a) (sa/remove s b)))
+                                        (pfun/removal (swap a b) s a))
+                     ((swap-removal-bijection a b s) Ha Hb))))
+  (qed <a>))
+
