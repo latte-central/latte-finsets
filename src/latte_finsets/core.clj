@@ -136,6 +136,13 @@
   [n nat]
   (range one n))
 
+(defthm fin-zero
+  []
+  (set/seteq (fin zero) (set/emptyset nat)))
+
+(proof 'fin-zero
+  (qed (emptyrange-emptyset)))
+
 (defthm fin-finite
   [n nat]
   (finite (fin n)))
@@ -535,3 +542,62 @@
                      ((swap-removal-bijection a b s) Ha Hb))))
   (qed <a>))
 
+
+(defthm fin-inj
+  [[m n nat]]
+  (==> (prel/rel-ex (lambda [g (rel nat nat)]
+                      (pfun/injection g (fin m) (fin n))))
+       (<= m n)))
+
+(deflemma fin-inj-lemma [n nat]
+  (forall [m nat]
+    (==> (prel/rel-ex (lambda [g (rel nat nat)]
+                        (pfun/injection g (fin m) (fin n))))
+         (<= m n))))
+
+(try-proof 'fin-inj-lemma
+  (pose P := (lambda [m nat]
+               (==> (prel/rel-ex (lambda [g (rel nat nat)]
+                        (pfun/injection g (fin m) (fin n))))
+                    (<= m n))))
+  "We proceed by induction on m"
+
+  "Base case m=0"
+  (assume [H0 (prel/rel-ex (lambda [g (rel nat nat)]
+                             (pfun/injection g (fin zero) (fin n))))]
+    (have <a1> (<= zero n) :by (ord/le-zero n)))
+
+  (have <a> (P zero) :by <a1>)
+
+  "Inductive case"
+  (assume [m nat Hind (P m)]
+    (assume [Hgex (prel/rel-ex (lambda [g (rel nat nat)]
+                                 (pfun/injection g (fin (succ m)) (fin n))))]
+
+      (assume [g (rel nat nat)
+               Hg (pfun/injection g (fin (succ m)) (fin n))]
+
+        "We have to prove that (<= (succ m) n)"
+
+        (have <b1> (<= one one) :by (ord/le-refl one))
+        (have <b2> (<= one (succ m)) :by (ord/le-one m))
+        (have <b> (elem one (fin (succ m)))
+              :by (p/and-intro <b1> <b2>))
+
+        (have <c1> (sq/exists-in [gone (fin n)] (g one gone))
+              :by ((p/and-elim* 2 Hg) one <b>)) 
+
+        (assume [gone nat 
+                 Hgone (elem gone (fin n))
+                 Hg-gone (g one gone)]
+
+          (have <c2> (<= one gone) :by (p/and-elim-left Hgone))
+          (have <c3> (<= gone n) :by (p/and-elim-right Hgone))
+          (have <c4> (<= one n) :by ((ord/le-trans one gone n) <c2> <c3>)))
+
+        (have <c> (<= one n) :by (sq/ex-in-elim <c1> <c4>))
+        
+        )
+      )
+    )
+  )
