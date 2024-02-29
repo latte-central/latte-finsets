@@ -131,11 +131,16 @@
     (prel/rel-ex (lambda [f (rel nat T)]
                    (finite-prop s n f)))))
 
-(defthm range-one-finite
+(definition fin
+  "The canonical finite set of size `n`."
   [n nat]
-  (finite (range one n)))
+  (range one n))
 
-(proof 'range-one-finite
+(defthm fin-finite
+  [n nat]
+  (finite (fin n)))
+
+(proof 'fin-finite
   (have <a> (finite-prop (range one n) n (rel/identity nat))
         :by (pfun/ridentity-bijection (range one n)))
   
