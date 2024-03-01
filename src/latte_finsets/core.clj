@@ -2,7 +2,7 @@
   "The formalization of finite sets.
 "
 
-  (:refer-clojure :exclude [and or not set <= < = int range =])
+  (:refer-clojure :exclude [and or not set <= < = int range = -])
 
   (:require [latte.core :as latte :refer [definition try-definition
                                           defthm try-defthm defaxiom defnotation
@@ -22,7 +22,8 @@
             [latte-sets.powerrel :as prel]
             [latte-sets.pfun :as pfun]
                        
-            [latte-nats.core :as nat :refer [zero one succ nat =]]
+            [latte-nats.core :as nat :refer [zero one succ nat = <>]]
+            [latte-nats.minus :as minus :refer [pred -]]
             [latte-nats.ord :as ord :refer [< <=]]))
 
 (definition range
@@ -118,6 +119,36 @@
 (proof 'range-one
   (have <a> (= n n) :by (eq/eq-refl n))
   (qed  ((range-eq n n) <a>)))
+
+(defthm range-pred
+  [[m n nat]]
+  (==> (<= m n)
+       (seteq (sa/remove (range m n) n)
+              (range m (pred n)))))
+
+(try-proof 'range-pred
+  (assume [Hmn _]
+    
+    "Subset case"
+    
+    (assume [k nat
+             Hk (elem k (sa/remove (range m n) n))]
+
+      "We have to show that (<= m k) and (<= k (pred n))"
+
+      (have <a1> (and (and (<= m k) (<= k n))
+                      (not (= k n))) :by Hk)
+
+      (have <a> (<= m k) :by (p/and-elim-left (p/and-elim-left <a1>)))
+
+      (have <b1> (< k n) :by ((ord/lt-le-ne k n) 
+                              (p/and-elim-right (p/and-elim-left <a1>))
+                              (p/and-elim-right <a1>)))
+
+      
+
+)))
+
 
 (definition finite-prop
   "The property a finite set must fulfill."
