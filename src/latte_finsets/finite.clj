@@ -19,8 +19,6 @@
             [latte-sets.pfun :as pfun]
                        
             [latte-nats.core :as nat :refer [zero one succ nat = <>]]
-            [latte-nats.minus :as minus :refer [pred -]]
-            [latte-nats.ord :as ord :refer [< <=]]
 
             [latte-finsets.range :as r :refer [range]]))
 
