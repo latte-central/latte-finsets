@@ -93,14 +93,14 @@
   (have <a> (< zero one) :by (ord/lt-succ zero))
   (qed ((range-empty-emptyset one zero) <a>)))
  
-(defthm range-eq
+(defthm range-one-eq
   [[m nat] [n nat]]
   (==> (= m n)
        (forall [k nat]
          (==> (elem k (range m n))
               (= k n)))))
 
-(proof 'range-eq
+(proof 'range-one-eq
   (assume [Heq (= m n)
            k nat
            Hk (elem k (range m n))]
@@ -118,7 +118,9 @@
 
 (proof 'range-one
   (have <a> (= n n) :by (eq/eq-refl n))
-  (qed  ((range-eq n n) <a>)))
+  (qed  ((range-one-eq n n) <a>)))
+
+(comment ;; TODO (if needed)
 
 (defthm range-pred
   [[m n nat]]
@@ -148,6 +150,7 @@
       
 
 )))
+)
 
 
 (definition finite-prop
