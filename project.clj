@@ -9,6 +9,7 @@
                  [latte-nats "0.7.0-SNAPSHOT"]]
   :codox {:output-path "docs"
           :metadata {:doc/format :markdown}
-          :namespaces [latte-finsets.core
+          :namespaces [latte-finsets.range
+                       latte-finsets.finite
                        ]}
   :plugins [[lein-codox "0.10.8"]])
