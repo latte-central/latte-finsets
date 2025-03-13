@@ -15,6 +15,7 @@
             [latte-sets.algebra :as sa]
             [latte-sets.quant :as sq :refer [forall-in exists-in]]
             [latte-sets.rel :as rel :refer [rel]]
+            [latte-sets.ralgebra :as ra]
             [latte-sets.powerrel :as prel]
             [latte-sets.pfun :as pfun]
                        
@@ -42,7 +43,24 @@
       (assume [f2 (rel nat T)
                Hf2 (f/finite-prop s n2 f2)]
         ;;(have <a1> (exists-in [x s] (f1 x n1))))
-      
+        (have <h1> (pfun/bijection f1 (range one n1) s) :by Hf1)
+        (have <h2> (pfun/bijection f2 (range one n2) s) :by Hf2)
+        (pose rf2 := (ra/rinverse f2))
+        (have <h2r>  (pfun/bijection rf2 s (range one n2)) 
+              :by (pfun/bijection-inverse-bijection f2 (range one n2) s <h2>))
+
+        ;; step1: we pose  g = (pfcomp r1 rf2 (range one n1) (range one n2))
+        ;; step2: we have to show (bijection g) (range one n1) (range one n2))
+
+        ;; step3: we need a lemma to thow that if  (< n1 n2) then there is no injection from (range one n1) to (range one n2)
+
+        ;; step4: since g is a bijection from (range one n1) to (range one n2)
+        ;; it is also an injection from (range one n1) to (range one n2)
+        ;; hence we have a contradiction wiz. our injection lemma
+
+        ;; step4: there is also a contradiction if (< n2 n1)
+        
+        ;; step5: we conclude (= n1 n2)
       )
 
 )))
