@@ -20,11 +20,23 @@
             [latte-sets.pfun :as pfun]
                        
             [latte-nats.core :as nat :refer [zero one succ nat = <>]]
+            [latte-nats.ord :as natord :refer [<]]
 
             [latte-finsets.range :as r :refer [range]]
             [latte-finsets.finite :as f :refer [finite]]
             
             ))
+
+(defthm card-inf-inj-lemma 
+  [[f (rel nat nat)] [n1 nat] [n2 nat]]
+  (==> (< n1 n2)
+       (forall [f (rel nat nat)] (not (pfun/injective f (range one n1) (range one n2))))))
+
+(try-proof 'card-inf-inj-lemma
+  (assume [Hinf (< n1 n2)]
+    (assume [f (rel nat nat)
+             Hf (pfun/injective f (range one n1) (range one n2))]
+      )))
 
 (defthm single-card
   [[?T :type] [s (set T)]]
