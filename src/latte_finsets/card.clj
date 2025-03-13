@@ -48,9 +48,14 @@
         (pose rf2 := (ra/rinverse f2))
         (have <h2r>  (pfun/bijection rf2 s (range one n2)) 
               :by (pfun/bijection-inverse-bijection f2 (range one n2) s <h2>))
+        
+        ;; We pose  g = (pfcomp-mid r1 rf2 (range one n1) s (range one n2))
+        (pose g := (pfun/pfcomp-mid f1 rf2 (range one n1) s (range one n2)))
 
-        ;; step1: we pose  g = (pfcomp r1 rf2 (range one n1) (range one n2))
-        ;; step2: we have to show (bijection g) (range one n1) (range one n2))
+        ;; step1: we have to show (bijection g (range one n1) (range one n2))
+        (have <step1> (pfun/bijection g (range one n1) (range one n2))
+              :by ((pfun/pfcomp-bijection-mid f1 rf2 (range one n1) s (range one n2))
+                   <h1> <h2r>))
 
         ;; step3: we need a lemma to thow that if  (< n1 n2) then there is no injection from (range one n1) to (range one n2)
 
