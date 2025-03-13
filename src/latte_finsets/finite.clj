@@ -98,3 +98,43 @@
 
   (qed <e>))
 
+
+(defthm finite-inj-counter-prop
+  "Injectivity is a necessary condition for finite ness."
+  [[?T :type] [s (set T)] [n nat]]
+  (==> (forall [f (rel nat T)] (not (pfun/injective f (range one n) s)))
+       (not (finite s))))
+
+(proof 'finite-inj-counter-prop-thm
+  (assume [Hninj _]
+    (assume [Hs (finite s)]
+      "The proof is by countradiction"
+      (have <fin> (exists [n nat]
+                    (prel/rel-ex (lambda [f (rel nat T)]
+                                   (finite-prop s n f))))
+            :by Hs)
+      "Let's eliminate the existential for n"
+      (assume [n nat
+               Hn (prel/rel-ex (lambda [f (rel nat T)]
+                                 (finite-prop s n f)))]
+        "Let's now elimitate the existential for f"
+        (assume [f (rel nat T)
+                 Hf (finite-prop s n f)]
+          (have <fbij> (pfun/bijection f (range one n) s) :by Hf)
+          (have <finj> (pfun/injective f (range one n) s) :by (pfun/bijection-injective f (range one n) s <fbij>))
+         
+          (have <fninj> (not (pfun/injective f (range one n) s))
+                :by (Hninj f))
+
+          (have <contra1> p/absurd :by (<fninj> <finj>)))
+
+        (have <contra2> p/absurd :by ((prel/rel-ex-elim (lambda [f (rel nat T)]
+                                                          (finite-prop s n f))
+                                                        p/absurd) 
+                                      Hn 
+                                     <contra1>)))
+      (have <contra3> p/absurd :by (q/ex-elim <fin> <contra2>))))
+
+  (qed <contra3>))
+
+
