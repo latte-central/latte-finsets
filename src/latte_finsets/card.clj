@@ -27,6 +27,38 @@
             
             ))
 
+;; from: https://www.math.drexel.edu/~tolya/pigeonhole
+(defthm pigeonhole
+  [[k nat] [m nat]]
+  (==> (prel/rel-ex (lambda [f (rel nat nat)]
+                      (pfun/injective f (range one k) (range one m))))
+       (<= k m)))
+
+(try-proof 'pigeonhole
+  (pose P := (lambda [k nat] (==> (prel/rel-ex (lambda [f (rel nat nat)]
+                                                 (pfun/injective f (range one k) (range one m))))
+                                  (<= k m))))
+  "The proof is by induction on k"
+  "The base case is trivial"
+  (assume [Hrel (prel/rel-ex (lambda [f (rel nat nat)]
+                               (pfun/injective f (range one zero) (range one m))))]
+    "The conclusion is reachable directly"
+    (have <a1> (<= zero m) :by (natord/le-zero m)))
+  (have <a> (P zero) :by <a1>)
+
+  "Now, the inductive case"
+  (assume [k nat
+           Hk (P k)]
+    "We have to show (P (succ K))"
+    (assume [Hrel (prel/rel-ex (lambda [f (rel nat nat)]
+                                 (pfun/injective f (range one (succ k)) (range one m))))]
+      
+    
+
+    )))
+
+
+
 (defthm card-inf-inj-lemma 
   [[f (rel nat nat)] [n nat] [m nat]]
   (==> (< n2 n1)
