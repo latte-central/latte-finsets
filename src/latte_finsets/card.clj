@@ -49,13 +49,21 @@
   "Now, the inductive case"
   (assume [k nat
            Hk (P k)]
-    "We have to show (P (succ K))"
+    "We have to show (P (succ k))"
     (assume [Hrel (prel/rel-ex (lambda [f (rel nat nat)]
                                  (pfun/injective f (range one (succ k)) (range one m))))]
-      
-    
+      "We use existential elimination"
+      (assume [f (rel nat nat)
+               Hf (pfun/injective f (range one (succ k)) (range one m))]
 
-    )))
+        "We have to show (<= (succ k) m)"
+        (have <hrel> (==> (prel/rel-ex (lambda [f (rel nat nat)]
+                                         (pfun/injective f (range one k) (range one m))))
+                          (<= k m)) :by Hk)
+
+        
+
+      ))))
 
 
 
