@@ -20,7 +20,7 @@
             [latte-sets.pfun :as pfun]
                        
             [latte-nats.core :as nat :refer [zero one succ nat = <>]]
-            [latte-nats.ord :as natord :refer [<]]
+            [latte-nats.ord :as natord :refer [< <=]]
 
             [latte-finsets.range :as r :refer [range]]
             [latte-finsets.finite :as f :refer [finite]]
@@ -28,17 +28,35 @@
             ))
 
 (defthm card-inf-inj-lemma 
-  [[f (rel nat nat)] [n1 nat] [n2 nat]]
-  (==> (< n1 n2)
+  [[f (rel nat nat)] [n nat] [m nat]]
+  (==> (< n2 n1)
        (forall [f (rel nat nat)] (not (pfun/injective f (range one n1) (range one n2))))))
 
 (try-proof 'card-inf-inj-lemma
-  (assume [Hinf (< n1 n2)]
+  (assume [Hinf (< n2 n1)]
     (assume [f (rel nat nat)
              Hf (pfun/injective f (range one n1) (range one n2))]
-      )))
+      (have <finj> (forall-in [i1 (range one n1)]
+                     (forall-in [i2 (range one n1)]
+                       (forall-in [j1 (range one n2)]
+                         (forall-in [j2 (range one n2)]
+                           (==> (f i1 j1)
+                                (f i2 j2)
+                                (not (equal i1 i2))
+                                (not (equal j1 j2))))))) 
+            :by ((pfun/injective-contra f (range one n1) (range one n2)) Hf))
+      "We have to derive a countradiction"
+      (assume [i1 nat Hi1 (elem i1 (range one n1))
+               i2 nat Hi2 (elem i2 (range one n1))
+               j1 nat Hj1 (elem j1 (range one n2))
+               j2 nat Hj2 (elem j2 (range one n2))]
+        (assume [Hf1 (f i1 j1)
+                 Hf2 (f i2 j2)
+                 Hneqj (not (equal i1 i2))]
+          (have <neqi> (not (equal j1 j2)) :by (<finj> i1 Hi1 i2 Hi2 j1 Hj1 j2 Hj2 Hf1 Hf2 Hneqj))
+)))))
 
-(defthm single-card
+ (defthm single-card
   [[?T :type] [s (set T)]]
   (forall [n1 n2 nat]
     (==> (prel/rel-ex (lambda [f (rel nat T)]
