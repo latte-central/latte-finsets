@@ -125,7 +125,7 @@
 (defthm range-pred
   [[m n nat]]
   (==> (<= m n)
-       (seteq (sa/remove (range m n) n)
+       (seteq (set/remove (range m n) n)
               (range m (pred n)))))
 
 (try-proof 'range-pred
@@ -134,7 +134,7 @@
     "Subset case"
     
     (assume [k nat
-             Hk (elem k (sa/remove (range m n) n))]
+             Hk (elem k (set/remove (range m n) n))]
 
       "We have to show that (<= m k) and (<= k (pred n))"
 
@@ -550,7 +550,7 @@
   [[?T :type] [a b T] [s (set T)]]
   (==> (elem a s)
        (elem b s)
-       (pfun/bijection (pfun/removal (swap a b) s a) (sa/remove s a) (sa/remove s b))))
+       (pfun/bijection (pfun/removal (swap a b) s a) (set/remove a s) (set/remove b s))))
 
 (proof 'swap-removal-bijection-thm
   (assume [Ha _ Hb _]
@@ -566,12 +566,12 @@
   (==> (elem a s)
        (elem b s)
        (prel/rel-ex (lambda [g (rel T T)] 
-                      (pfun/bijection g (sa/remove s a) (sa/remove s b))))))
+                      (pfun/bijection g (set/remove a s) (set/remove b s))))))
 
 (proof 'rem-bijection-thm
   (assume [Ha _ Hb _]
     (have <a> _ :by ((prel/rel-ex-intro (lambda [g (rel T T)] 
-                                          (pfun/bijection g (sa/remove s a) (sa/remove s b)))
+                                          (pfun/bijection g (set/remove a s) (set/remove b s)))
                                         (pfun/removal (swap a b) s a))
                      ((swap-removal-bijection a b s) Ha Hb))))
   (qed <a>))

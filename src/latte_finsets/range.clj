@@ -131,20 +131,29 @@
     "Subset case"
     
     (assume [k nat
-             Hk (elem k (set/remove (n range m n)))]
+             Hk (elem k (set/remove n (range m n)))]
 
       "We have to show that (<= m k) and (<= k (pred n))"
 
-      (have <a1> (and (and (<= m k) (<= k n))
-                      (not (= k n))) :by Hk)
+      (have <a1> (and (not (= k n))
+                      (and (<= m k) (<= k n))) :by Hk)
 
-      (have <a> (<= m k) :by (p/and-elim-left (p/and-elim-left <a1>)))
+      (have <a2> (<= k n) :by (p/and-elim-right (p/and-elim-right <a1>)))
+
+      (have <a3> (< k n) :by ((ord/lt-le-ne k n)
+                              <a2> (p/and-elim-left <a1>)))
+
+      (have <a> (<= m k) :by (p/and-elim-left (p/and-elim-right <a1>)))
 
       (have <b1> (< k n) :by ((ord/lt-le-ne k n) 
                               (p/and-elim-right (p/and-elim-left <a1>))
                               (p/and-elim-right <a1>)))
 
+      ;; we have to show (<= k (pred n))
+
       
 
 )))
+
 )
+

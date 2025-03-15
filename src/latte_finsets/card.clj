@@ -27,6 +27,9 @@
             
             ))
 
+
+
+
 ;; from: https://www.math.drexel.edu/~tolya/pigeonhole
 (defthm pigeonhole
   [[k nat] [m nat]]
@@ -67,6 +70,7 @@
 
 
 
+(comment
 (defthm card-inf-inj-lemma 
   [[f (rel nat nat)] [n nat] [m nat]]
   (==> (< n2 n1)
@@ -95,6 +99,7 @@
                  Hneqj (not (equal i1 i2))]
           (have <neqi> (not (equal j1 j2)) :by (<finj> i1 Hi1 i2 Hi2 j1 Hj1 j2 Hj2 Hf1 Hf2 Hneqj))
 )))))
+)
 
  (defthm single-card
   [[?T :type] [s (set T)]]
