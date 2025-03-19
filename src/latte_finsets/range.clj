@@ -117,16 +117,16 @@
   (have <a> (= n n) :by (eq/eq-refl n))
   (qed  ((range-one-eq n n) <a>)))
 
-(comment ;; TODO (if needed)
-
 (defthm range-pred
   [[m n nat]]
-  (==> (<= m n)
+  (==> (<> n zero)
+       (<= m n)
        (seteq (set/remove n (range m n))
               (range m (pred n)))))
 
-(try-proof 'range-pred
-  (assume [Hmn _]
+(proof 'range-pred
+  (assume [Hnz _
+           Hmn _]
     
     "Subset case"
     
@@ -135,25 +135,57 @@
 
       "We have to show that (<= m k) and (<= k (pred n))"
 
-      (have <a1> (and (not (= k n))
-                      (and (<= m k) (<= k n))) :by Hk)
+      (have <a> (and (not (= k n))
+                     (and (<= m k) (<= k n))) :by Hk)
 
-      (have <a2> (<= k n) :by (p/and-elim-right (p/and-elim-right <a1>)))
+      (have <b> (<= m k) :by (p/and-elim-left (p/and-elim-right <a>)))
+      
+      
+      (have <c1> (<= k n) :by (p/and-elim-right (p/and-elim-right <a>)))
 
-      (have <a3> (< k n) :by ((ord/lt-le-ne k n)
-                              <a2> (p/and-elim-left <a1>)))
+      (have <c2> (< k n) :by ((ord/lt-le-ne k n)
+                              <c1> (p/and-elim-left <a>)))
 
-      (have <a> (<= m k) :by (p/and-elim-left (p/and-elim-right <a1>)))
-
-      (have <b1> (< k n) :by ((ord/lt-le-ne k n) 
-                              (p/and-elim-right (p/and-elim-left <a1>))
-                              (p/and-elim-right <a1>)))
-
-      ;; we have to show (<= k (pred n))
+      (have <c> (<= k (pred n)) :by ((ord/lt-le-pred k n) <c2>))
 
       
+      (have <d> (elem k (range m (pred n)))
+            :by (p/and-intro <b> <c>)))
 
-)))
 
-)
+    "Superset case"
+
+    (assume [k nat
+             Hk (elem k (range m (pred n)))]
+     
+      "We have to show (elem k (set/remove n (range m n)))"
+      "which means: (and (not (equal k n))
+                         (elem k (range m n)))"
+
+      (assume [Hcontra (equal k n)]
+        (have <e1> (<= k (pred n)) :by (p/and-elim-right Hk))
+        (have <e2> (<= k (pred k)) :by (eq/rewrite <e1> (eq/eq-sym Hcontra)))
+        (have <e3> (<= (pred k) k) :by (ord/le-pred k))
+        (have <e4> (= (pred k) k) :by ((ord/le-antisym (pred k) k) <e3> <e2>))
+        (have <e5> (= k zero) :by ((minus/pred-eq-zero k) <e4>))
+        (have <e6> (= n zero) :by (eq/rewrite <e5> Hcontra))
+        (have <e> p/absurd :by (Hnz <e6>)))
+
+      (have <f1> (<= m k) :by (p/and-elim-left Hk))
+      (have <f2> (<= (pred n) n) :by (ord/le-pred n))
+      (have <f3> (<= k (pred n)) :by (p/and-elim-right Hk))
+      (have <f4> (<= k n) :by ((ord/le-trans k (pred n) n) <f3> <f2>))
+      (have <f> (elem k (range m n)) :by (p/and-intro <f1> <f4>))
+
+      (have <g> (elem k (set/remove n (range m n)))
+            :by (p/and-intro <e> <f>)))
+
+
+    (have <h> _ :by (p/and-intro <d> <g>)))
+
+  (qed <h>))
+
+
+
+
 
