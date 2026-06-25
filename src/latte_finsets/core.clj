@@ -125,8 +125,8 @@
 (defthm range-pred
   [[m n nat]]
   (==> (<= m n)
-       (seteq (set/remove (range m n) n)
-              (range m (pred n)))))
+       (set/seteq (set/remove (range m n) n)
+                  (range m (pred n)))))
 
 (try-proof 'range-pred
   (assume [Hmn _]
